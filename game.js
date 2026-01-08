@@ -5,6 +5,20 @@ const DATA_PATHS = {
   npcs: "data/npcs.json"
 };
 
+const CREATION_OPTIONS = {
+  genders: ["мужской", "женский"],
+  jobs: ["безработный", "студент", "фрилансер"],
+  traits: ["смелый", "осторожный", "общительный", "наблюдательный"],
+  backgrounds: ["дом", "улица", "учеба", "работа"]
+};
+
+const CITY_MAP = {
+  центр: ["квартира", "бар", "магазин одежды", "офис"],
+  трущобы: ["двор", "подворотня"],
+  элитный: ["галерея", "бутик"],
+  тюрьма: ["камера", "двор"]
+};
+
 class Randomizer {
   static roll(chance) {
     return Math.random() * 100 <= chance;
@@ -64,6 +78,7 @@ class Character {
     this.health = profile.health;
     this.morale = profile.morale;
     this.energy = profile.energy;
+    this.money = profile.money;
     this.reputation = profile.reputation;
     this.relationships = profile.relationships;
     if (profile.inventory instanceof Inventory) {
@@ -91,6 +106,9 @@ class Character {
     if (typeof change.morale === "number") {
       this.morale = Randomizer.clamp(this.morale + change.morale, -100, 100);
     }
+    if (typeof change.money === "number") {
+      this.money = Math.max(0, this.money + change.money);
+    }
   }
 }
 
@@ -109,6 +127,7 @@ class World {
     this.districts = config.districts;
     this.time = { day: 1, hour: 8 };
     this.activeDistrict = config.startDistrict;
+    this.activePlace = config.startPlace;
   }
 
   advanceTime(hours = 1) {
@@ -151,17 +170,35 @@ class Parser {
     if (clean.includes("спорт") || clean.includes("трен")) {
       return { intent: "train" };
     }
-    if (clean.includes("бар")) {
-      return { intent: "go", target: "бар" };
-    }
-    if (clean.includes("дом")) {
-      return { intent: "go", target: "дом" };
+    for (const [district, places] of Object.entries(CITY_MAP)) {
+      if (clean.includes(district)) {
+        return { intent: "go", target: { district, place: places[0] } };
+      }
+      const foundPlace = places.find((place) => clean.includes(place));
+      if (foundPlace) {
+        return { intent: "go", target: { district, place: foundPlace } };
+      }
     }
     if (clean.includes("работ")) {
       return { intent: "work" };
     }
     if (clean.includes("общ")) {
       return { intent: "social" };
+    }
+    if (clean.includes("осмотр")) {
+      return { intent: "look" };
+    }
+    if (clean.includes("телефон") || clean.includes("звон")) {
+      return { intent: "phone" };
+    }
+    if (clean.includes("карта")) {
+      return { intent: "map" };
+    }
+    if (clean.includes("магазин")) {
+      return { intent: "shop" };
+    }
+    if (clean.includes("купить")) {
+      return { intent: "buy", item: clean.replace("купить", "").trim() };
     }
     return { intent: "free", text: input };
   }
@@ -173,6 +210,7 @@ class Renderer {
   }
 
   renderEntry({ narrative, dialogue, system, tables, options }) {
+    this.logElement.innerHTML = "";
     const entry = document.createElement("div");
     entry.className = "entry";
 
@@ -215,7 +253,6 @@ class Renderer {
     }
 
     this.logElement.appendChild(entry);
-    this.logElement.scrollTop = this.logElement.scrollHeight;
   }
 
   renderTable({ headers, rows }) {
@@ -251,6 +288,8 @@ class Renderer {
 class Game {
   constructor() {
     this.logElement = document.getElementById("log");
+    this.mapElement = document.getElementById("map");
+    this.availableActionsElement = document.getElementById("available-actions");
     this.input = document.getElementById("player-input");
     this.sendAction = document.getElementById("send-action");
     this.newGame = document.getElementById("new-game");
@@ -331,6 +370,7 @@ class Game {
       health: { hp: 100 },
       energy: 80,
       morale: 10,
+      money: 120,
       reputation: { police: 0, underworld: 0, syndicate: 0 },
       relationships: [],
       inventory: new Inventory(25),
@@ -338,11 +378,11 @@ class Game {
     };
     this.creationQueue = [
       { key: "name", prompt: "Имя героя?" },
-      { key: "gender", prompt: "Пол/самоопределение?" },
+      { key: "gender", prompt: `Пол (варианты: ${CREATION_OPTIONS.genders.join(", ")})?` },
       { key: "age", prompt: "Возраст (18+)?" },
-      { key: "job", prompt: "Работа/занятие?" },
-      { key: "traits", prompt: "Черты характера (через запятую)?" },
-      { key: "background", prompt: "Фон (дом/улица/учеба/работа)?" },
+      { key: "job", prompt: `Стартовая занятость (варианты: ${CREATION_OPTIONS.jobs.join(", ")})?` },
+      { key: "traits", prompt: `Выберите 1-2 черты (варианты: ${CREATION_OPTIONS.traits.join(", ")})?` },
+      { key: "background", prompt: `Фон (варианты: ${CREATION_OPTIONS.backgrounds.join(", ")})?` },
       { key: "stats", prompt: "Распределите 50 очков статов (сила, ловкость, гибкость, харизма, интеллект). Формат: сила 10, ловкость 10, гибкость 10, харизма 10, интеллект 10." },
       { key: "appearance", prompt: "Внешность: рост, вес, бедра, талия, грудь, ягодицы, лицо (1-10). Пример: рост 170, вес 65, бедра 6, талия 5, грудь 5, ягодицы 6, лицо 7." },
       { key: "confirm", prompt: "Подтвердить создание? (да/нет)" }
@@ -381,10 +421,16 @@ class Game {
 
     switch (question.key) {
       case "name":
-      case "gender":
-      case "job":
-      case "background":
         this.profileDraft[question.key] = value;
+        break;
+      case "gender":
+        if (!this.isValidChoice(value, CREATION_OPTIONS.genders)) {
+          this.renderer.renderEntry({
+            system: `Выберите пол из списка: ${CREATION_OPTIONS.genders.join(", ")}.`
+          });
+          return;
+        }
+        this.profileDraft.gender = value.toLowerCase();
         break;
       case "age":
         this.profileDraft.age = Number.parseInt(value, 10);
@@ -395,8 +441,31 @@ class Game {
           return;
         }
         break;
+      case "job":
+        if (!this.isValidChoice(value, CREATION_OPTIONS.jobs)) {
+          this.renderer.renderEntry({
+            system: `Выберите занятость из списка: ${CREATION_OPTIONS.jobs.join(", ")}.`
+          });
+          return;
+        }
+        this.profileDraft.job = value.toLowerCase();
+        break;
       case "traits":
-        this.profileDraft.traits = value.split(",").map((item) => item.trim()).filter(Boolean);
+        if (!this.applyTraits(value)) {
+          this.renderer.renderEntry({
+            system: `Выберите 1-2 черты из списка: ${CREATION_OPTIONS.traits.join(", ")}.`
+          });
+          return;
+        }
+        break;
+      case "background":
+        if (!this.isValidChoice(value, CREATION_OPTIONS.backgrounds)) {
+          this.renderer.renderEntry({
+            system: `Выберите фон из списка: ${CREATION_OPTIONS.backgrounds.join(", ")}.`
+          });
+          return;
+        }
+        this.profileDraft.background = value.toLowerCase();
         break;
       case "stats":
         if (!this.applyStats(value)) {
@@ -431,6 +500,22 @@ class Game {
 
     this.currentQuestion += 1;
     this.askNextQuestion();
+  }
+
+  isValidChoice(value, list) {
+    return list.includes(value.trim().toLowerCase());
+  }
+
+  applyTraits(value) {
+    const choices = value
+      .split(",")
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean);
+    const unique = Array.from(new Set(choices));
+    if (unique.length === 0 || unique.length > 2) return false;
+    if (!unique.every((trait) => CREATION_OPTIONS.traits.includes(trait))) return false;
+    this.profileDraft.traits = unique;
+    return true;
   }
 
   applyStats(value) {
@@ -486,14 +571,29 @@ class Game {
     return true;
   }
 
+  getStartLocation(background) {
+    const normalized = background?.toLowerCase();
+    if (normalized === "улица") {
+      return { district: "трущобы", place: "двор" };
+    }
+    if (normalized === "работа") {
+      return { district: "центр", place: "офис" };
+    }
+    if (normalized === "учеба") {
+      return { district: "центр", place: "квартира" };
+    }
+    return { district: "центр", place: "квартира" };
+  }
+
   finishCreation() {
     this.character = new Character(this.profileDraft);
-    this.data.items.slice(0, 2).forEach((item) => {
-      this.character.inventory.add(item);
-    });
+    const starterItems = this.data.items.filter((item) => ["cash", "phone"].includes(item.id));
+    starterItems.forEach((item) => this.character.inventory.add(item));
+    const startConfig = this.getStartLocation(this.profileDraft.background);
     this.world = new World({
-      districts: ["центр", "трущобы", "элитный", "бар", "тюрьма"],
-      startDistrict: this.profileDraft.background?.includes("улиц") ? "трущобы" : "центр"
+      districts: Object.keys(CITY_MAP),
+      startDistrict: startConfig.district,
+      startPlace: startConfig.place
     });
     this.npcs = this.data.npcs.map((npc) => new NPC(npc));
     this.eventManager = new EventManager(this.data.events);
@@ -504,10 +604,12 @@ class Game {
     this.saveGame.disabled = false;
 
     this.renderer.renderEntry({
-      narrative: `Добро пожаловать в мегаполис. ${this.character.name} начинает путь в районе: ${this.world.activeDistrict}.`,
+      narrative: `Добро пожаловать в мегаполис. ${this.character.name} начинает путь: ${this.world.activeDistrict}, ${this.world.activePlace}.`,
       system: "Введите действие или нажмите «Следующий ход»."
     });
     this.renderStatus();
+    this.renderMap();
+    this.renderAvailableActions();
   }
 
   runTurn(forcedAction = "") {
@@ -542,42 +644,47 @@ class Game {
     });
 
     this.renderStatus();
+    this.renderMap();
+    this.renderAvailableActions();
   }
 
   resolveAction(input) {
     const parsed = this.parser.parse(input);
     const responses = this.data.phrases;
+    const genderTag = this.character.gender === "женский" ? "Она" : "Он";
 
     switch (parsed.intent) {
       case "train":
-        this.character.applyChange({
-          stats: { strength: 1 },
-          health: { hp: -1 },
-          energy: -6,
-          morale: 3
-        });
+        this.character.applyChange(this.getTrainingOutcome());
         return {
           narrative: "Вы выбрали тренировку: мышцы горят, но прогресс заметен.",
-          system: "Сила +1, Энергия -6, Мораль +3."
+          system: "Показатели обновлены тренировкой."
         };
       case "go":
-        this.world.activeDistrict = parsed.target === "бар" ? "бар" : "центр";
+        this.world.activeDistrict = parsed.target.district;
+        this.world.activePlace = parsed.target.place;
         return {
-          narrative: `Вы перемещаетесь в район: ${this.world.activeDistrict}.` 
+          narrative: `Вы перемещаетесь: ${this.world.activeDistrict}, ${this.world.activePlace}.` 
         };
       case "work":
-        this.character.applyChange({
-          energy: -8,
-          morale: -2
-        });
-        return {
-          narrative: "Рабочий день прошел напряженно, но стабильность — тоже ресурс.",
-          system: "Энергия -8, Мораль -2."
-        };
+        return this.handleWorkAction();
       case "social":
+        return this.handleSocialAction(responses, genderTag);
+      case "phone":
+        return this.handlePhoneAction();
+      case "shop":
+        return this.handleShopAction();
+      case "buy":
+        return this.handleBuyAction(parsed.item);
+      case "map":
         return {
-          narrative: "Вы решаете пообщаться и разведать настроение района.",
-          dialogue: Randomizer.pick(responses.smalltalk || ["Сосед: " + "Неон снова меркнет, а я только кофе налил."])
+          narrative: "Карта обновлена. Вы осматриваете доступные районы и точки.",
+          system: "Смотрите панель «Карта» справа."
+        };
+      case "look":
+        return {
+          narrative: `Вы осматриваетесь: вокруг ${this.world.activeDistrict}, точка — ${this.world.activePlace}.`,
+          system: "Подсказка: смотрите доступные действия в панели справа."
         };
       case "free":
         return {
@@ -598,6 +705,227 @@ class Game {
     }
   }
 
+  getStatCheck(statKey, baseChance = 50) {
+    const stat = this.character.stats[statKey] || 5;
+    const modifier = (stat - 10) * 3;
+    return Randomizer.clamp(baseChance + modifier, 10, 90);
+  }
+
+  getTrainingOutcome() {
+    const strengthBoost = this.character.stats.strength < 20 ? 1 : 0;
+    return {
+      stats: { strength: strengthBoost },
+      health: { hp: -1 },
+      energy: -6,
+      morale: 3
+    };
+  }
+
+  handleWorkAction() {
+    if (this.character.job !== "курьер") {
+      return {
+        narrative: "Без работы вы не можете выполнить смену.",
+        system: "Сначала устройтесь на работу через телефон."
+      };
+    }
+
+    const successChance = this.getStatCheck("agility", 55) + this.getStatCheck("intellect", 45) / 4;
+    const success = Randomizer.roll(successChance);
+    const payout = success ? 80 : 30;
+
+    this.character.applyChange({
+      energy: -10,
+      morale: success ? 2 : -2,
+      money: payout
+    });
+
+    return {
+      narrative: success
+        ? "Маршрут пройден без сбоев: клиенты довольны скоростью."
+        : "Доставка заняла больше времени, чем ожидалось, но опыт тоже капитал.",
+      system: `Заработок: ${payout} кредитов.`
+    };
+  }
+
+  handleSocialAction(responses, genderTag) {
+    const genderBonus = this.character.gender === "женский" ? 5 : 0;
+    const chance = this.getStatCheck("charisma", 50 + genderBonus);
+    const success = Randomizer.roll(chance);
+    this.character.applyChange({ morale: success ? 3 : -1, energy: -2 });
+
+    return {
+      narrative: success
+        ? `${genderTag} легко вступает в разговор, и люди открываются быстрее обычного.`
+        : "Разговор идет сдержанно, придется поработать над подходом.",
+      dialogue: Randomizer.pick(
+        responses.smalltalk || ["Сосед: " + "Неон снова меркнет, а я только кофе налил."]
+      )
+    };
+  }
+
+  handlePhoneAction() {
+    const hasPhone = this.character.inventory.items.some((item) => item.id === "phone");
+    if (!hasPhone) {
+      return {
+        narrative: "Без телефона связь с миром ограничена.",
+        system: "Найдите устройство или купите его."
+      };
+    }
+
+    if (this.character.job === "курьер") {
+      return {
+        narrative: "Ваш менеджер подтверждает следующую смену.",
+        system: "Вы уже работаете курьером."
+      };
+    }
+
+    const chance = this.getStatCheck("intellect", 55);
+    const success = Randomizer.roll(chance);
+    if (success) {
+      this.character.job = "курьер";
+      return {
+        narrative: "Вы подаете заявку через телефон и получаете контракт курьера.",
+        system: "Новая работа: курьер."
+      };
+    }
+    return {
+      narrative: "Ответ от службы доставки не пришел. Возможно, стоит улучшить резюме.",
+      system: "Попробуйте снова позже."
+    };
+  }
+
+  handleShopAction() {
+    if (this.world.activePlace !== "магазин одежды") {
+      return {
+        narrative: "Здесь нет витрин одежды.",
+        system: "Переместитесь в «магазин одежды»."
+      };
+    }
+
+    const stock = this.getShopStock();
+    if (stock.length === 0) {
+      return { narrative: "Полки пусты. Похоже, нужно завезти новые модели." };
+    }
+
+    return {
+      narrative: "Вы осматриваете ассортимент магазина.",
+      system: `Доступно: ${stock.map((item) => item.name).join(", ")}.`,
+      options: stock.map((item) => `Купить ${item.name}`)
+    };
+  }
+
+  handleBuyAction(rawItemName) {
+    if (this.world.activePlace !== "магазин одежды") {
+      return {
+        narrative: "Покупать одежду можно только в магазине.",
+        system: "Переместитесь в «магазин одежды»."
+      };
+    }
+
+    if (!rawItemName) {
+      return {
+        narrative: "Укажите название вещи для покупки.",
+        system: "Например: купить Женская куртка."
+      };
+    }
+
+    const stock = this.getShopStock();
+    const item = stock.find((entry) => entry.name.toLowerCase() === rawItemName);
+    if (!item) {
+      return {
+        narrative: "Такой вещи нет в наличии.",
+        system: "Откройте список магазина командой «магазин»."
+      };
+    }
+
+    const price = item.price || 60;
+    if (this.character.money < price) {
+      return {
+        narrative: "Недостаточно средств для покупки.",
+        system: `Нужно ${price} кредитов.`
+      };
+    }
+
+    if (!this.character.inventory.add(item)) {
+      return {
+        narrative: "Инвентарь перегружен.",
+        system: "Освободите место."
+      };
+    }
+
+    this.character.applyChange({ money: -price, morale: 2 });
+    return {
+      narrative: `Вы покупаете «${item.name}» и чувствуете обновление образа.`,
+      system: `Списано ${price} кредитов.`
+    };
+  }
+
+  getShopStock() {
+    const gender = this.character.gender;
+    return this.data.items
+      .filter((item) => item.type === "clothing")
+      .filter((item) => item.gender === "унисекс" || item.gender === gender)
+      .map((item) => ({ ...item, price: item.price || 60 }));
+  }
+
+  getAvailableActions() {
+    const actions = [];
+    const places = CITY_MAP[this.world.activeDistrict] || [];
+    places.forEach((place) => {
+      if (place !== this.world.activePlace) {
+        actions.push(`Перейти: ${place}`);
+      }
+    });
+    Object.keys(CITY_MAP).forEach((district) => {
+      if (district !== this.world.activeDistrict) {
+        actions.push(`Перейти: ${district}`);
+      }
+    });
+    actions.push("Осмотреться", "Карта", "Общаться");
+
+    if (this.world.activePlace === "магазин одежды") {
+      actions.push("Магазин", "Купить <название>");
+    }
+
+    if (this.character.inventory.items.some((item) => item.id === "phone")) {
+      actions.push("Телефон");
+    }
+
+    if (this.character.job === "курьер") {
+      actions.push("Работа");
+    }
+
+    return actions;
+  }
+
+  renderMap() {
+    if (!this.mapElement) return;
+    this.mapElement.innerHTML = "";
+    Object.entries(CITY_MAP).forEach(([district, places]) => {
+      const label = document.createElement("div");
+      label.className = "location";
+      if (district === this.world.activeDistrict) {
+        label.classList.add("active");
+      }
+      const suffix =
+        district === this.world.activeDistrict
+          ? ` (текущая точка: ${this.world.activePlace})`
+          : "";
+      label.textContent = `${district}: ${places.join(", ")}${suffix}`;
+      this.mapElement.appendChild(label);
+    });
+  }
+
+  renderAvailableActions() {
+    if (!this.availableActionsElement) return;
+    this.availableActionsElement.innerHTML = "";
+    this.getAvailableActions().forEach((action) => {
+      const item = document.createElement("li");
+      item.textContent = action;
+      this.availableActionsElement.appendChild(item);
+    });
+  }
+
   renderStatus() {
     const statsTable = {
       headers: ["Стат", "Значение"],
@@ -616,9 +944,11 @@ class Game {
         ["HP", this.character.health.hp],
         ["Энергия", this.character.energy],
         ["Мораль", this.character.morale],
+        ["Деньги", `${this.character.money}`],
+        ["Работа", this.character.job],
         ["День", this.world.time.day],
         ["Час", `${this.world.time.hour}:00`],
-        ["Район", this.world.activeDistrict]
+        ["Локация", `${this.world.activeDistrict}, ${this.world.activePlace}`]
       ]
     };
 
@@ -629,9 +959,18 @@ class Game {
         : [["Пусто", "0"]]
     };
 
+    const propertyTable = {
+      headers: ["Имущество", "Описание"],
+      rows: [
+        ["Адрес", this.character.property.address],
+        ["Размер", this.character.property.size],
+        ["Мебель", this.character.property.furniture.length ? this.character.property.furniture.join(", ") : "Пусто"]
+      ]
+    };
+
     this.renderer.renderEntry({
       system: "Статус обновлен.",
-      tables: [statsTable, healthTable, inventoryTable]
+      tables: [statsTable, healthTable, inventoryTable, propertyTable]
     });
   }
 
@@ -660,7 +999,8 @@ class Game {
     this.character = new Character(payload.character);
     this.world = new World({
       districts: payload.world.districts,
-      startDistrict: payload.world.activeDistrict
+      startDistrict: payload.world.activeDistrict,
+      startPlace: payload.world.activePlace
     });
     this.world.time = payload.world.time;
     this.eventManager = new EventManager(this.data.events);
@@ -675,6 +1015,8 @@ class Game {
       system: "Продолжайте приключение."
     });
     this.renderStatus();
+    this.renderMap();
+    this.renderAvailableActions();
   }
 
   reset() {
