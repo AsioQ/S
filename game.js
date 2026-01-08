@@ -119,6 +119,8 @@ class NPC {
     this.role = data.role;
     this.schedule = data.schedule;
     this.relationship = data.relationship || 0;
+    this.district = data.district || Randomizer.pick(Object.keys(CITY_MAP));
+    this.place = data.place || Randomizer.pick(CITY_MAP[this.district]);
   }
 }
 
@@ -199,6 +201,24 @@ class Parser {
     }
     if (clean.includes("купить")) {
       return { intent: "buy", item: clean.replace("купить", "").trim() };
+    }
+    if (clean.includes("нпс") || clean.includes("люд")) {
+      return { intent: "npc" };
+    }
+    if (clean.includes("поговор")) {
+      return { intent: "talk" };
+    }
+    if (clean.includes("флирт")) {
+      return { intent: "flirt" };
+    }
+    if (clean.includes("друж")) {
+      return { intent: "befriend" };
+    }
+    if (clean.includes("взять заказ")) {
+      return { intent: "pickup" };
+    }
+    if (clean.includes("достав")) {
+      return { intent: "deliver" };
     }
     return { intent: "free", text: input };
   }
@@ -312,6 +332,8 @@ class Game {
     this.npcs = [];
     this.eventManager = null;
     this.pendingMenu = null;
+    this.activeNpcIds = [];
+    this.activeDelivery = null;
 
     this.creationQueue = [];
     this.currentQuestion = 0;
@@ -603,6 +625,7 @@ class Game {
     });
     this.npcs = this.data.npcs.map((npc) => new NPC(npc));
     this.eventManager = new EventManager(this.data.events);
+    this.spawnNpcs(10);
 
     this.state = "playing";
     this.pendingMenu = null;
@@ -618,6 +641,8 @@ class Game {
     this.renderStatus();
     this.renderMap();
     this.renderAvailableActions();
+    this.moveNpcs();
+    this.renderNpcList();
   }
 
   runTurn(forcedAction = "") {
@@ -655,6 +680,7 @@ class Game {
     this.renderStatus();
     this.renderMap();
     this.renderAvailableActions();
+    this.renderNpcList();
   }
 
   resolveAction(input) {
@@ -686,6 +712,18 @@ class Game {
         return this.handleShopAction();
       case "buy":
         return this.handleBuyAction(parsed.item);
+      case "npc":
+        return this.handleNpcList();
+      case "talk":
+        return this.handleNpcInteraction("talk");
+      case "flirt":
+        return this.handleNpcInteraction("flirt");
+      case "befriend":
+        return this.handleNpcInteraction("befriend");
+      case "pickup":
+        return this.handlePickupAction();
+      case "deliver":
+        return this.handleDeliverAction();
       case "map":
         return {
           narrative: "Карта обновлена. Вы осматриваете доступные районы и точки.",
@@ -746,28 +784,25 @@ class Game {
       };
     }
 
-    const deliveries = Randomizer.pick([3, 4, 5]);
-    let successCount = 0;
-    for (let i = 0; i < deliveries; i += 1) {
-      const rollChance =
-        this.getStatCheck("agility", 55) + this.getStatCheck("intellect", 45) / 4;
-      if (Randomizer.roll(rollChance)) {
-        successCount += 1;
-      }
+    if (this.activeDelivery) {
+      return {
+        narrative: "У вас уже есть активный заказ.",
+        system: "Сначала доставьте или завершите текущий маршрут."
+      };
     }
 
-    const payout = successCount * 40 + (deliveries - successCount) * 15;
-    const moraleDelta = successCount >= deliveries - 1 ? 3 : -1;
-
-    this.character.applyChange({
-      energy: -12,
-      morale: moraleDelta,
-      money: payout
-    });
+    const tasks = Randomizer.pick([2, 3, 4]);
+    this.activeDelivery = {
+      tasks,
+      completed: 0,
+      pickup: { district: "центр", place: "офис" },
+      dropoff: this.getRandomDropoff()
+    };
 
     return {
-      narrative: `Смена курьера завершена: доставок ${deliveries}, удачных ${successCount}.`,
-      system: `Заработок: ${payout} кредитов. Энергия снижена на 12.`
+      narrative: "Вы получаете маршрут курьера с несколькими адресами.",
+      system: `Заданий: ${tasks}. Заберите посылку и доставьте по адресу: ${this.activeDelivery.dropoff.district}, ${this.activeDelivery.dropoff.place}.`,
+      options: ["Взять заказ", "Проверить карту"]
     };
   }
 
@@ -784,6 +819,79 @@ class Game {
       dialogue: Randomizer.pick(
         responses.smalltalk || ["Сосед: " + "Неон снова меркнет, а я только кофе налил."]
       )
+    };
+  }
+
+  getRandomDropoff() {
+    const district = Randomizer.pick(Object.keys(CITY_MAP));
+    const place = Randomizer.pick(CITY_MAP[district]);
+    return { district, place };
+  }
+
+  handlePickupAction() {
+    if (!this.activeDelivery) {
+      return {
+        narrative: "Сейчас нет активных заказов.",
+        system: "Сначала начните смену в офисе."
+      };
+    }
+
+    if (this.world.activeDistrict !== "центр" || this.world.activePlace !== "офис") {
+      return {
+        narrative: "Посылка находится в офисе логистики.",
+        system: "Перейдите в «центр, офис»."
+      };
+    }
+
+    this.character.applyChange({ energy: -3 });
+    return {
+      narrative: "Вы забираете посылку и отправляетесь по маршруту.",
+      system: `Адрес доставки: ${this.activeDelivery.dropoff.district}, ${this.activeDelivery.dropoff.place}.`,
+      options: ["Доставить заказ"]
+    };
+  }
+
+  handleDeliverAction() {
+    if (!this.activeDelivery) {
+      return {
+        narrative: "Нет активных заказов для доставки.",
+        system: "Сначала возьмите заказ."
+      };
+    }
+
+    const { dropoff } = this.activeDelivery;
+    if (this.world.activeDistrict !== dropoff.district || this.world.activePlace !== dropoff.place) {
+      return {
+        narrative: "Вы не в точке доставки.",
+        system: `Нужно добраться до ${dropoff.district}, ${dropoff.place}.`
+      };
+    }
+
+    const rollChance =
+      this.getStatCheck("agility", 55) + this.getStatCheck("intellect", 45) / 4;
+    const success = Randomizer.roll(rollChance);
+    const payout = success ? 45 : 20;
+
+    this.activeDelivery.completed += 1;
+    this.character.applyChange({
+      energy: -5,
+      morale: success ? 2 : -1,
+      money: payout
+    });
+
+    if (this.activeDelivery.completed >= this.activeDelivery.tasks) {
+      this.activeDelivery = null;
+      return {
+        narrative: "Вы завершили все доставки смены.",
+        system: `Оплата получена, смена закрыта.`
+      };
+    }
+
+    this.activeDelivery.dropoff = this.getRandomDropoff();
+    return {
+      narrative: "Доставка завершена, приходит следующий адрес.",
+      system: `Новый адрес: ${this.activeDelivery.dropoff.district}, ${this.activeDelivery.dropoff.place}.`,
+      options: ["Доставить заказ"]
     };
   }
 
@@ -872,14 +980,16 @@ class Game {
       return { narrative: "Полки пусты. Похоже, нужно завезти новые модели." };
     }
 
+    const categories = this.getShopCategories(stock);
     this.pendingMenu = {
       type: "shop",
-      stock
+      stock,
+      categories
     };
 
     return {
-      narrative: "Вы осматриваете ассортимент магазина.",
-      options: stock.map((item, index) => `${index + 1}. Купить ${item.name} (${item.price} кр.)`)
+      narrative: "Вы открываете каталог магазина.",
+      options: categories.map((category, index) => `${index + 1}. ${category}`)
     };
   }
 
@@ -891,14 +1001,33 @@ class Game {
         system: "Например: 1"
       };
     }
-    const item = this.pendingMenu.stock[index];
-    if (!item) {
+    if (this.pendingMenu.view === "category") {
+      const item = this.pendingMenu.filtered[index];
+      if (!item) {
+        return {
+          narrative: "Такого номера нет.",
+          system: "Попробуйте другой."
+        };
+      }
+      return this.handleBuyAction(item.name.toLowerCase());
+    }
+
+    const category = this.pendingMenu.categories[index];
+    if (!category) {
       return {
-        narrative: "Такого номера нет.",
+        narrative: "Такого каталога нет.",
         system: "Попробуйте другой."
       };
     }
-    return this.handleBuyAction(item.name.toLowerCase());
+
+    const filtered = this.pendingMenu.stock.filter((item) => item.category === category);
+    this.pendingMenu.view = "category";
+    this.pendingMenu.filtered = filtered;
+
+    return {
+      narrative: `Каталог: ${category}.`,
+      options: filtered.map((item, itemIndex) => `${itemIndex + 1}. Купить ${item.name} (${item.price} кр.)`)
+    };
   }
 
   handleMenuSelection(value) {
@@ -908,6 +1037,9 @@ class Game {
     }
     if (this.pendingMenu.type === "shop") {
       result = this.handleShopMenuSelection(value);
+    }
+    if (this.pendingMenu.type === "npc") {
+      result = this.handleNpcMenuSelection(value, this.pendingMenu.actionType || "talk");
     }
 
     this.pendingMenu = null;
@@ -927,6 +1059,11 @@ class Game {
     }
     options.push("Закрыть телефон");
     return options;
+  }
+
+  getShopCategories(stock) {
+    const categories = Array.from(new Set(stock.map((item) => item.category))).filter(Boolean);
+    return categories.length ? categories : ["прочее"];
   }
 
   handleBuyAction(rawItemName) {
@@ -997,6 +1134,7 @@ class Game {
       }
     });
     actions.push("Осмотреться", "Карта", "Общаться");
+    actions.push("НПС", "Поговорить", "Флиртовать", "Подружиться");
 
     if (this.world.activePlace === "магазин одежды") {
       actions.push("Магазин", "Купить <название>");
@@ -1007,7 +1145,7 @@ class Game {
     }
 
     if (this.character.job === "курьер") {
-      actions.push("Работа");
+      actions.push("Работа", "Взять заказ", "Доставить заказ");
     }
 
     return actions;
@@ -1038,6 +1176,16 @@ class Game {
       const item = document.createElement("li");
       item.textContent = action;
       this.availableActionsElement.appendChild(item);
+    });
+  }
+
+  renderNpcList() {
+    const nearby = this.getNearbyNpcs();
+    const info = nearby.length
+      ? `Рядом: ${nearby.map((npc) => npc.name).join(", ")}.`
+      : "Поблизости никого нет.";
+    this.renderer.renderEntry({
+      system: info
     });
   }
 
@@ -1089,6 +1237,105 @@ class Game {
     });
   }
 
+  spawnNpcs(limit) {
+    this.activeNpcIds = this.npcs.slice(0, limit).map((npc) => npc.id);
+  }
+
+  moveNpcs() {
+    this.npcs.forEach((npc) => {
+      if (!this.activeNpcIds.includes(npc.id)) return;
+      if (Randomizer.roll(40)) {
+        npc.district = Randomizer.pick(Object.keys(CITY_MAP));
+        npc.place = Randomizer.pick(CITY_MAP[npc.district]);
+      }
+    });
+  }
+
+  getNearbyNpcs() {
+    return this.npcs.filter(
+      (npc) =>
+        this.activeNpcIds.includes(npc.id) &&
+        npc.district === this.world.activeDistrict &&
+        npc.place === this.world.activePlace
+    );
+  }
+
+  handleNpcList() {
+    const nearby = this.getNearbyNpcs();
+    if (!nearby.length) {
+      return {
+        narrative: "Поблизости нет знакомых.",
+        system: "Попробуйте сменить локацию."
+      };
+    }
+
+    this.pendingMenu = {
+      type: "npc",
+      options: nearby.map((npc) => npc.name),
+      npcs: nearby
+    };
+
+    return {
+      narrative: "Вы видите рядом несколько людей.",
+      options: nearby.map((npc, index) => `${index + 1}. ${npc.name} (${npc.role})`)
+    };
+  }
+
+  handleNpcMenuSelection(selection, actionType) {
+    const index = Number.parseInt(selection, 10) - 1;
+    if (Number.isNaN(index) || index < 0) {
+      return {
+        narrative: "Выберите номер персонажа.",
+        system: "Например: 1"
+      };
+    }
+    const npc = this.pendingMenu.npcs[index];
+    if (!npc) {
+      return {
+        narrative: "Такого номера нет.",
+        system: "Попробуйте другой."
+      };
+    }
+    return this.resolveNpcInteraction(npc, actionType);
+  }
+
+  handleNpcInteraction(actionType) {
+    const nearby = this.getNearbyNpcs();
+    if (!nearby.length) {
+      return {
+        narrative: "Никого рядом нет.",
+        system: "Смените локацию."
+      };
+    }
+    this.pendingMenu = {
+      type: "npc",
+      actionType,
+      options: nearby.map((npc) => npc.name),
+      npcs: nearby
+    };
+
+    return {
+      narrative: "Кого вы хотите выбрать?",
+      options: nearby.map((npc, index) => `${index + 1}. ${npc.name} (${npc.role})`)
+    };
+  }
+
+  resolveNpcInteraction(npc, actionType) {
+    const base = actionType === "flirt" ? 45 : actionType === "befriend" ? 50 : 55;
+    const chance = this.getStatCheck("charisma", base);
+    const success = Randomizer.roll(chance);
+    const delta = success ? 5 : -2;
+    npc.relationship = Randomizer.clamp(npc.relationship + delta, -100, 100);
+    this.character.applyChange({ morale: success ? 2 : -1, energy: -1 });
+
+    const actionLabel =
+      actionType === "flirt" ? "флиртуете" : actionType === "befriend" ? "налаживаете контакт" : "разговариваете";
+    return {
+      narrative: `Вы ${actionLabel} с ${npc.name}.`,
+      system: `Отношение: ${npc.relationship} (${success ? "+" : ""}${delta}).`
+    };
+  }
+
   enableInput(state) {
     this.input.disabled = !state;
     this.sendAction.disabled = !state;
@@ -1132,6 +1379,8 @@ class Game {
     this.renderStatus();
     this.renderMap();
     this.renderAvailableActions();
+    this.moveNpcs();
+    this.renderNpcList();
   }
 
   reset() {

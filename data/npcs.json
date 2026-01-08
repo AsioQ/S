@@ -19,5 +19,68 @@
     "role": "аналитик",
     "schedule": "утро",
     "relationship": -2
+  },
+  {
+    "id": "dara",
+    "name": "Дара",
+    "role": "музыкант",
+    "schedule": "вечер",
+    "relationship": 1
+  },
+  {
+    "id": "leo",
+    "name": "Лео",
+    "role": "охранник",
+    "schedule": "ночь",
+    "relationship": 0
+  },
+  {
+    "id": "yana",
+    "name": "Яна",
+    "role": "диджей",
+    "schedule": "ночь",
+    "relationship": 2
+  },
+  {
+    "id": "roman",
+    "name": "Роман",
+    "role": "механик",
+    "schedule": "день",
+    "relationship": -1
+  },
+  {
+    "id": "katya",
+    "name": "Катя",
+    "role": "журналист",
+    "schedule": "утро",
+    "relationship": 3
+  },
+  {
+    "id": "mina",
+    "name": "Мина",
+    "role": "курьер",
+    "schedule": "день",
+    "relationship": 0
+  },
+  {
+    "id": "igor",
+    "name": "Игорь",
+    "role": "бармен",
+    "schedule": "вечер",
+    "relationship": 1
+  },
+  {
+    "id": "saha",
+    "name": "Саха",
+    "role": "стример",
+    "schedule": "день",
+    "relationship": 0
+  },
+  {
+    "id": "vera",
+    "name": "Вера",
+    "role": "администратор",
+    "schedule": "утро",
+    "relationship": 2
   }
 ]

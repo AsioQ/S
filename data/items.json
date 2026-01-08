@@ -29,7 +29,8 @@
     "effect": "Опрятный вид для деловых встреч",
     "type": "clothing",
     "gender": "мужской",
-    "price": 70
+    "price": 70,
+    "category": "верх"
   },
   {
     "id": "mens-jeans",
@@ -38,7 +39,8 @@
     "effect": "Удобно для городской суеты",
     "type": "clothing",
     "gender": "мужской",
-    "price": 80
+    "price": 80,
+    "category": "низ"
   },
   {
     "id": "womens-dress",
@@ -47,7 +49,8 @@
     "effect": "Добавляет уверенности в центре",
     "type": "clothing",
     "gender": "женский",
-    "price": 85
+    "price": 85,
+    "category": "верх"
   },
   {
     "id": "womens-jacket",
@@ -56,6 +59,107 @@
     "effect": "Защита от ночного ветра",
     "type": "clothing",
     "gender": "женский",
-    "price": 95
+    "price": 95,
+    "category": "верх"
+  },
+  {
+    "id": "sneakers",
+    "name": "Городские кроссовки",
+    "weight": 2,
+    "effect": "Удобная обувь для ходьбы",
+    "type": "clothing",
+    "gender": "унисекс",
+    "price": 60,
+    "category": "обувь"
+  },
+  {
+    "id": "boots",
+    "name": "Тактические ботинки",
+    "weight": 3,
+    "effect": "Защита и устойчивость на улицах",
+    "type": "clothing",
+    "gender": "унисекс",
+    "price": 120,
+    "category": "обувь"
+  },
+  {
+    "id": "mens-tshirt",
+    "name": "Мужская футболка",
+    "weight": 1,
+    "effect": "Легкий вариант для теплых вечеров",
+    "type": "clothing",
+    "gender": "мужской",
+    "price": 45,
+    "category": "верх"
+  },
+  {
+    "id": "mens-hoodie",
+    "name": "Мужское худи",
+    "weight": 2,
+    "effect": "Уютный слой для улиц",
+    "type": "clothing",
+    "gender": "мужской",
+    "price": 90,
+    "category": "верх"
+  },
+  {
+    "id": "mens-trousers",
+    "name": "Мужские брюки",
+    "weight": 2,
+    "effect": "Аккуратный городской стиль",
+    "type": "clothing",
+    "gender": "мужской",
+    "price": 85,
+    "category": "штаны"
+  },
+  {
+    "id": "womens-top",
+    "name": "Женский топ",
+    "weight": 1,
+    "effect": "Стильный городской акцент",
+    "type": "clothing",
+    "gender": "женский",
+    "price": 55,
+    "category": "верх"
+  },
+  {
+    "id": "womens-skirt",
+    "name": "Женская юбка",
+    "weight": 1,
+    "effect": "Элегантный образ для центра",
+    "type": "clothing",
+    "gender": "женский",
+    "price": 75,
+    "category": "низ"
+  },
+  {
+    "id": "womens-leggings",
+    "name": "Женские леггинсы",
+    "weight": 1,
+    "effect": "Комфорт и свобода движений",
+    "type": "clothing",
+    "gender": "женский",
+    "price": 65,
+    "category": "низ"
+  },
+  {
+    "id": "mens-shoes",
+    "name": "Мужские туфли",
+    "weight": 2,
+    "effect": "Подходят для деловых встреч",
+    "type": "clothing",
+    "gender": "мужской",
+    "price": 110,
+    "category": "обувь"
+  },
+  {
+    "id": "womens-shoes",
+    "name": "Женские туфли",
+    "weight": 2,
+    "effect": "Подчеркивают уверенный образ",
+    "type": "clothing",
+    "gender": "женский",
+    "price": 110,
+    "category": "обувь"
   }
 ]
