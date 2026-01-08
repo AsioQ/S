@@ -13,8 +13,7 @@
     "effect": "Легкий бонус к харизме в барах",
     "type": "clothing",
     "gender": "унисекс",
-    "price": 90,
-    "category": "верх"
+    "price": 90
   },
   {
     "id": "phone",
