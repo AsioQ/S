@@ -1,0 +1,61 @@
+[
+  {
+    "id": "cash",
+    "name": "Кредитные купюры",
+    "weight": 0,
+    "effect": "Деньги для повседневных расходов",
+    "type": "currency"
+  },
+  {
+    "id": "jacket",
+    "name": "Неоновая куртка",
+    "weight": 2,
+    "effect": "Легкий бонус к харизме в барах",
+    "type": "clothing",
+    "gender": "унисекс",
+    "price": 90
+  },
+  {
+    "id": "phone",
+    "name": "Смартфон",
+    "weight": 1,
+    "effect": "Доступ к новостям и контактам",
+    "type": "device"
+  },
+  {
+    "id": "mens-shirt",
+    "name": "Мужская рубашка",
+    "weight": 1,
+    "effect": "Опрятный вид для деловых встреч",
+    "type": "clothing",
+    "gender": "мужской",
+    "price": 70
+  },
+  {
+    "id": "mens-jeans",
+    "name": "Мужские джинсы",
+    "weight": 2,
+    "effect": "Удобно для городской суеты",
+    "type": "clothing",
+    "gender": "мужской",
+    "price": 80
+  },
+  {
+    "id": "womens-dress",
+    "name": "Женское платье",
+    "weight": 1,
+    "effect": "Добавляет уверенности в центре",
+    "type": "clothing",
+    "gender": "женский",
+    "price": 85
+  },
+  {
+    "id": "womens-jacket",
+    "name": "Женская куртка",
+    "weight": 2,
+    "effect": "Защита от ночного ветра",
+    "type": "clothing",
+    "gender": "женский",
+    "price": 95
+  }
+]
