@@ -210,7 +210,6 @@ class Renderer {
   }
 
   renderEntry({ narrative, dialogue, system, tables, options }) {
-    this.logElement.innerHTML = "";
     const entry = document.createElement("div");
     entry.className = "entry";
 
@@ -312,6 +311,7 @@ class Game {
     this.world = null;
     this.npcs = [];
     this.eventManager = null;
+    this.pendingMenu = null;
 
     this.creationQueue = [];
     this.currentQuestion = 0;
@@ -395,6 +395,7 @@ class Game {
   askNextQuestion() {
     const question = this.creationQueue[this.currentQuestion];
     if (!question) return;
+    this.reset();
     this.renderer.renderEntry({
       dialogue: `Создание персонажа: ${question.prompt}`,
       system: "Введите ответ в поле ниже."
@@ -408,6 +409,11 @@ class Game {
 
     if (this.state === "creating") {
       this.handleCreationInput(value);
+      return;
+    }
+
+    if (this.pendingMenu) {
+      this.handleMenuSelection(value);
       return;
     }
 
@@ -599,10 +605,12 @@ class Game {
     this.eventManager = new EventManager(this.data.events);
 
     this.state = "playing";
+    this.pendingMenu = null;
     this.enableInput(true);
     this.nextTurn.disabled = false;
     this.saveGame.disabled = false;
 
+    this.reset();
     this.renderer.renderEntry({
       narrative: `Добро пожаловать в мегаполис. ${this.character.name} начинает путь: ${this.world.activeDistrict}, ${this.world.activePlace}.`,
       system: "Введите действие или нажмите «Следующий ход»."
@@ -625,6 +633,7 @@ class Game {
     this.world.advanceTime(1);
     this.applyPassiveEffects();
 
+    this.reset();
     this.renderer.renderEntry({
       narrative: result.narrative,
       dialogue: result.dialogue,
@@ -652,6 +661,7 @@ class Game {
     const parsed = this.parser.parse(input);
     const responses = this.data.phrases;
     const genderTag = this.character.gender === "женский" ? "Она" : "Он";
+    this.pendingMenu = null;
 
     switch (parsed.intent) {
       case "train":
@@ -729,21 +739,35 @@ class Game {
       };
     }
 
-    const successChance = this.getStatCheck("agility", 55) + this.getStatCheck("intellect", 45) / 4;
-    const success = Randomizer.roll(successChance);
-    const payout = success ? 80 : 30;
+    if (this.world.activePlace !== "офис") {
+      return {
+        narrative: "Для начала смены нужно отметиться в офисе логистики.",
+        system: "Перейдите в «центр, офис»."
+      };
+    }
+
+    const deliveries = Randomizer.pick([3, 4, 5]);
+    let successCount = 0;
+    for (let i = 0; i < deliveries; i += 1) {
+      const rollChance =
+        this.getStatCheck("agility", 55) + this.getStatCheck("intellect", 45) / 4;
+      if (Randomizer.roll(rollChance)) {
+        successCount += 1;
+      }
+    }
+
+    const payout = successCount * 40 + (deliveries - successCount) * 15;
+    const moraleDelta = successCount >= deliveries - 1 ? 3 : -1;
 
     this.character.applyChange({
-      energy: -10,
-      morale: success ? 2 : -2,
+      energy: -12,
+      morale: moraleDelta,
       money: payout
     });
 
     return {
-      narrative: success
-        ? "Маршрут пройден без сбоев: клиенты довольны скоростью."
-        : "Доставка заняла больше времени, чем ожидалось, но опыт тоже капитал.",
-      system: `Заработок: ${payout} кредитов.`
+      narrative: `Смена курьера завершена: доставок ${deliveries}, удачных ${successCount}.`,
+      system: `Заработок: ${payout} кредитов. Энергия снижена на 12.`
     };
   }
 
@@ -772,25 +796,66 @@ class Game {
       };
     }
 
-    if (this.character.job === "курьер") {
+    this.pendingMenu = {
+      type: "phone",
+      options: this.getPhoneMenuOptions()
+    };
+
+    return {
+      narrative: "Вы открываете меню телефона.",
+      options: this.pendingMenu.options.map((option, index) => `${index + 1}. ${option}`)
+    };
+  }
+
+  handlePhoneMenuSelection(selection) {
+    const index = Number.parseInt(selection, 10) - 1;
+    if (Number.isNaN(index) || index < 0) {
       return {
-        narrative: "Ваш менеджер подтверждает следующую смену.",
-        system: "Вы уже работаете курьером."
+        narrative: "Нужно выбрать пункт меню по номеру.",
+        system: "Например: 1"
       };
     }
 
-    const chance = this.getStatCheck("intellect", 55);
-    const success = Randomizer.roll(chance);
-    if (success) {
-      this.character.job = "курьер";
+    const option = this.pendingMenu.options[index];
+    if (!option) {
       return {
-        narrative: "Вы подаете заявку через телефон и получаете контракт курьера.",
-        system: "Новая работа: курьер."
+        narrative: "Такого пункта нет.",
+        system: "Попробуйте другой номер."
       };
     }
+
+    if (option === "Устроиться курьером") {
+      if (this.character.job === "курьер") {
+        return {
+          narrative: "Вы уже работаете курьером.",
+          system: "Можно перейти к работе через офис."
+        };
+      }
+      const chance = this.getStatCheck("intellect", 55);
+      const success = Randomizer.roll(chance);
+      if (success) {
+        this.character.job = "курьер";
+        return {
+          narrative: "Заявка принята. Контракт на курьерскую работу активирован.",
+          system: "Новая работа: курьер."
+        };
+      }
+      return {
+        narrative: "Ответ пока не пришел. Возможно, стоит улучшить навыки.",
+        system: "Попробуйте снова позже."
+      };
+    }
+
+    if (option === "Проверить статус") {
+      return {
+        narrative: "Вы просматриваете сообщения.",
+        system: `Статус: ${this.character.job}.`
+      };
+    }
+
     return {
-      narrative: "Ответ от службы доставки не пришел. Возможно, стоит улучшить резюме.",
-      system: "Попробуйте снова позже."
+      narrative: "Телефон свернут.",
+      system: "Меню закрыто."
     };
   }
 
@@ -807,11 +872,61 @@ class Game {
       return { narrative: "Полки пусты. Похоже, нужно завезти новые модели." };
     }
 
+    this.pendingMenu = {
+      type: "shop",
+      stock
+    };
+
     return {
       narrative: "Вы осматриваете ассортимент магазина.",
-      system: `Доступно: ${stock.map((item) => item.name).join(", ")}.`,
-      options: stock.map((item) => `Купить ${item.name}`)
+      options: stock.map((item, index) => `${index + 1}. Купить ${item.name} (${item.price} кр.)`)
     };
+  }
+
+  handleShopMenuSelection(selection) {
+    const index = Number.parseInt(selection, 10) - 1;
+    if (Number.isNaN(index) || index < 0) {
+      return {
+        narrative: "Выберите номер товара.",
+        system: "Например: 1"
+      };
+    }
+    const item = this.pendingMenu.stock[index];
+    if (!item) {
+      return {
+        narrative: "Такого номера нет.",
+        system: "Попробуйте другой."
+      };
+    }
+    return this.handleBuyAction(item.name.toLowerCase());
+  }
+
+  handleMenuSelection(value) {
+    let result = null;
+    if (this.pendingMenu.type === "phone") {
+      result = this.handlePhoneMenuSelection(value);
+    }
+    if (this.pendingMenu.type === "shop") {
+      result = this.handleShopMenuSelection(value);
+    }
+
+    this.pendingMenu = null;
+    if (result) {
+      this.reset();
+      this.renderer.renderEntry(result);
+      this.renderStatus();
+      this.renderMap();
+      this.renderAvailableActions();
+    }
+  }
+
+  getPhoneMenuOptions() {
+    const options = ["Проверить статус"];
+    if (this.character.job !== "курьер") {
+      options.unshift("Устроиться курьером");
+    }
+    options.push("Закрыть телефон");
+    return options;
   }
 
   handleBuyAction(rawItemName) {
