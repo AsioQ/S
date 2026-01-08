@@ -1,0 +1,86 @@
+[
+  {
+    "id": "aiko",
+    "name": "Айко",
+    "role": "бармен",
+    "schedule": "вечер",
+    "relationship": 5
+  },
+  {
+    "id": "ren",
+    "name": "Рэн",
+    "role": "курьер",
+    "schedule": "день",
+    "relationship": 0
+  },
+  {
+    "id": "mori",
+    "name": "Мори",
+    "role": "аналитик",
+    "schedule": "утро",
+    "relationship": -2
+  },
+  {
+    "id": "hana",
+    "name": "Хана",
+    "role": "музыкант",
+    "schedule": "вечер",
+    "relationship": 1
+  },
+  {
+    "id": "taro",
+    "name": "Таро",
+    "role": "охранник",
+    "schedule": "ночь",
+    "relationship": 0
+  },
+  {
+    "id": "sora",
+    "name": "Сора",
+    "role": "диджей",
+    "schedule": "ночь",
+    "relationship": 2
+  },
+  {
+    "id": "kenji",
+    "name": "Кэндзи",
+    "role": "механик",
+    "schedule": "день",
+    "relationship": -1
+  },
+  {
+    "id": "yuna",
+    "name": "Юна",
+    "role": "журналист",
+    "schedule": "утро",
+    "relationship": 3
+  },
+  {
+    "id": "mika",
+    "name": "Мика",
+    "role": "курьер",
+    "schedule": "день",
+    "relationship": 0
+  },
+  {
+    "id": "hiro",
+    "name": "Хиро",
+    "role": "бармен",
+    "schedule": "вечер",
+    "relationship": 1
+  },
+  {
+    "id": "rei",
+    "name": "Рэй",
+    "role": "стример",
+    "schedule": "день",
+    "relationship": 0
+  },
+  {
+    "id": "emi",
+    "name": "Эми",
+    "role": "администратор",
+    "schedule": "утро",
+    "relationship": 2
+  }
+]
