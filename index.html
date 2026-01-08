@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Neon Boroughs: Text RPG</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Neon Boroughs</h1>
+      <p class="subtitle">Текстовый RPG-симулятор жизни (PG-13)</p>
+    </header>
+
+    <section class="controls">
+      <button id="new-game">Создать персонажа</button>
+      <button id="next-turn" disabled>Следующий ход</button>
+      <button id="save-game" disabled>Сохранить</button>
+      <button id="load-game">Загрузить</button>
+    </section>
+
+    <section class="output" aria-live="polite">
+      <div id="log"></div>
+    </section>
+
+    <section class="input">
+      <label for="player-input">Ваше действие</label>
+      <div class="input-row">
+        <input id="player-input" type="text" placeholder="Например: пойти в бар" disabled />
+        <button id="send-action" disabled>Отправить</button>
+      </div>
+      <p class="hint">Подсказка: вы можете игнорировать меню и писать свободный текст.</p>
+    </section>
+  </div>
+
+  <script src="game.js" type="module"></script>
+</body>
+</html>
