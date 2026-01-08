@@ -1,0 +1,23 @@
+[
+  {
+    "id": "nina",
+    "name": "Нина",
+    "role": "бармен",
+    "schedule": "вечер",
+    "relationship": 5
+  },
+  {
+    "id": "ray",
+    "name": "Рэй",
+    "role": "курьер",
+    "schedule": "день",
+    "relationship": 0
+  },
+  {
+    "id": "mori",
+    "name": "Мори",
+    "role": "аналитик",
+    "schedule": "утро",
+    "relationship": -2
+  }
+]
