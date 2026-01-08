@@ -1,11 +1,11 @@
 :root {
   color-scheme: dark;
-  --bg: #0b0f1a;
-  --panel: #111829;
-  --accent: #62d0ff;
-  --text: #f5f7ff;
-  --muted: #9aa4c7;
-  --border: #1f2a44;
+  --bg: #0c1a26;
+  --panel: #102233;
+  --accent: #ffb347;
+  --text: #f3f1ec;
+  --muted: #9fb2c8;
+  --border: #1e3649;
 }
 
 * {
@@ -15,7 +15,7 @@
 body {
   margin: 0;
   font-family: "Inter", "Segoe UI", sans-serif;
-  background: radial-gradient(circle at top, #1b2340, #090c14 70%);
+  background: radial-gradient(circle at top, #1b3d59, #07121a 70%);
   color: var(--text);
 }
 
@@ -34,6 +34,7 @@ h1 {
   margin: 0;
   font-size: 2.6rem;
   letter-spacing: 1px;
+  color: #ffe0b3;
 }
 
 .subtitle {
@@ -98,7 +99,7 @@ button:disabled {
 }
 
 .panel {
-  background: #0c1324;
+  background: #0c1c2b;
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 12px;
@@ -122,7 +123,7 @@ button:disabled {
   justify-content: space-between;
   padding: 4px 6px;
   border-radius: 6px;
-  background: #0f1830;
+  background: #10273a;
 }
 
 #map .location.active {
@@ -135,6 +136,21 @@ button:disabled {
   padding-left: 18px;
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.action-buttons button {
+  background: #143045;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.85rem;
 }
 
 .entry {

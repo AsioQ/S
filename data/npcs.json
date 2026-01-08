@@ -1,14 +1,14 @@
 [
   {
-    "id": "nina",
-    "name": "Нина",
+    "id": "aiko",
+    "name": "Айко",
     "role": "бармен",
     "schedule": "вечер",
     "relationship": 5
   },
   {
-    "id": "ray",
-    "name": "Рэй",
+    "id": "ren",
+    "name": "Рэн",
     "role": "курьер",
     "schedule": "день",
     "relationship": 0
@@ -21,64 +21,64 @@
     "relationship": -2
   },
   {
-    "id": "dara",
-    "name": "Дара",
+    "id": "hana",
+    "name": "Хана",
     "role": "музыкант",
     "schedule": "вечер",
     "relationship": 1
   },
   {
-    "id": "leo",
-    "name": "Лео",
+    "id": "taro",
+    "name": "Таро",
     "role": "охранник",
     "schedule": "ночь",
     "relationship": 0
   },
   {
-    "id": "yana",
-    "name": "Яна",
+    "id": "sora",
+    "name": "Сора",
     "role": "диджей",
     "schedule": "ночь",
     "relationship": 2
   },
   {
-    "id": "roman",
-    "name": "Роман",
+    "id": "kenji",
+    "name": "Кэндзи",
     "role": "механик",
     "schedule": "день",
     "relationship": -1
   },
   {
-    "id": "katya",
-    "name": "Катя",
+    "id": "yuna",
+    "name": "Юна",
     "role": "журналист",
     "schedule": "утро",
     "relationship": 3
   },
   {
-    "id": "mina",
-    "name": "Мина",
+    "id": "mika",
+    "name": "Мика",
     "role": "курьер",
     "schedule": "день",
     "relationship": 0
   },
   {
-    "id": "igor",
-    "name": "Игорь",
+    "id": "hiro",
+    "name": "Хиро",
     "role": "бармен",
     "schedule": "вечер",
     "relationship": 1
   },
   {
-    "id": "saha",
-    "name": "Саха",
+    "id": "rei",
+    "name": "Рэй",
     "role": "стример",
     "schedule": "день",
     "relationship": 0
   },
   {
-    "id": "vera",
-    "name": "Вера",
+    "id": "emi",
+    "name": "Эми",
     "role": "администратор",
     "schedule": "утро",
     "relationship": 2

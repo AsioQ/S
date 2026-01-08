@@ -13,7 +13,9 @@
     "effect": "Легкий бонус к харизме в барах",
     "type": "clothing",
     "gender": "унисекс",
-    "price": 90
+    "price": 90,
+    "category": "верх",
+    "effectStats": { "charisma": 1 }
   },
   {
     "id": "phone",
@@ -30,7 +32,8 @@
     "type": "clothing",
     "gender": "мужской",
     "price": 70,
-    "category": "верх"
+    "category": "верх",
+    "effectStats": { "charisma": 1 }
   },
   {
     "id": "mens-jeans",
@@ -40,7 +43,8 @@
     "type": "clothing",
     "gender": "мужской",
     "price": 80,
-    "category": "низ"
+    "category": "низ",
+    "effectStats": { "agility": 1 }
   },
   {
     "id": "womens-dress",
@@ -50,7 +54,8 @@
     "type": "clothing",
     "gender": "женский",
     "price": 85,
-    "category": "верх"
+    "category": "верх",
+    "effectStats": { "charisma": 2 }
   },
   {
     "id": "womens-jacket",
@@ -60,7 +65,8 @@
     "type": "clothing",
     "gender": "женский",
     "price": 95,
-    "category": "верх"
+    "category": "верх",
+    "effectStats": { "charisma": 1 }
   },
   {
     "id": "sneakers",
@@ -70,7 +76,8 @@
     "type": "clothing",
     "gender": "унисекс",
     "price": 60,
-    "category": "обувь"
+    "category": "обувь",
+    "effectStats": { "agility": 1 }
   },
   {
     "id": "boots",
@@ -80,7 +87,8 @@
     "type": "clothing",
     "gender": "унисекс",
     "price": 120,
-    "category": "обувь"
+    "category": "обувь",
+    "effectStats": { "strength": 1 }
   },
   {
     "id": "mens-tshirt",
@@ -90,7 +98,8 @@
     "type": "clothing",
     "gender": "мужской",
     "price": 45,
-    "category": "верх"
+    "category": "верх",
+    "effectStats": { "charisma": 1 }
   },
   {
     "id": "mens-hoodie",
@@ -100,7 +109,8 @@
     "type": "clothing",
     "gender": "мужской",
     "price": 90,
-    "category": "верх"
+    "category": "верх",
+    "effectMorale": 2
   },
   {
     "id": "mens-trousers",
@@ -110,7 +120,8 @@
     "type": "clothing",
     "gender": "мужской",
     "price": 85,
-    "category": "штаны"
+    "category": "штаны",
+    "effectStats": { "charisma": 1 }
   },
   {
     "id": "womens-top",
@@ -120,7 +131,8 @@
     "type": "clothing",
     "gender": "женский",
     "price": 55,
-    "category": "верх"
+    "category": "верх",
+    "effectStats": { "charisma": 1 }
   },
   {
     "id": "womens-skirt",
@@ -130,7 +142,8 @@
     "type": "clothing",
     "gender": "женский",
     "price": 75,
-    "category": "низ"
+    "category": "низ",
+    "effectStats": { "charisma": 1 }
   },
   {
     "id": "womens-leggings",
@@ -140,7 +153,8 @@
     "type": "clothing",
     "gender": "женский",
     "price": 65,
-    "category": "низ"
+    "category": "низ",
+    "effectStats": { "agility": 1 }
   },
   {
     "id": "mens-shoes",
@@ -150,7 +164,8 @@
     "type": "clothing",
     "gender": "мужской",
     "price": 110,
-    "category": "обувь"
+    "category": "обувь",
+    "effectStats": { "charisma": 1 }
   },
   {
     "id": "womens-shoes",
@@ -160,6 +175,112 @@
     "type": "clothing",
     "gender": "женский",
     "price": 110,
-    "category": "обувь"
+    "category": "обувь",
+    "effectStats": { "charisma": 1 }
+  },
+  {
+    "id": "mens-underwear",
+    "name": "Мужское белье",
+    "weight": 1,
+    "effect": "Комфортная базовая вещь",
+    "type": "clothing",
+    "gender": "мужской",
+    "price": 40,
+    "category": "белье",
+    "effectMorale": 1
+  },
+  {
+    "id": "womens-underwear",
+    "name": "Женское белье",
+    "weight": 1,
+    "effect": "Базовый комплект для повседневности",
+    "type": "clothing",
+    "gender": "женский",
+    "price": 45,
+    "category": "белье",
+    "effectMorale": 1
+  },
+  {
+    "id": "lace-set",
+    "name": "Кружевной комплект",
+    "weight": 1,
+    "effect": "Уверенность и настроение",
+    "type": "clothing",
+    "gender": "женский",
+    "price": 80,
+    "category": "белье",
+    "effectStats": { "charisma": 1 },
+    "effectMorale": 1
+  },
+  {
+    "id": "boxer-set",
+    "name": "Спортивные боксеры",
+    "weight": 1,
+    "effect": "Свобода движения",
+    "type": "clothing",
+    "gender": "мужской",
+    "price": 50,
+    "category": "белье",
+    "effectStats": { "agility": 1 }
+  },
+  {
+    "id": "rice",
+    "name": "Рис",
+    "weight": 1,
+    "effect": "Ингредиент для домашней готовки",
+    "type": "food",
+    "price": 20,
+    "nutrition": 15,
+    "category": "ингредиенты"
+  },
+  {
+    "id": "fish",
+    "name": "Свежая рыба",
+    "weight": 2,
+    "effect": "Ингредиент для сытных блюд",
+    "type": "food",
+    "price": 35,
+    "nutrition": 20,
+    "category": "ингредиенты"
+  },
+  {
+    "id": "vegetables",
+    "name": "Овощи",
+    "weight": 1,
+    "effect": "Ингредиент для легких блюд",
+    "type": "food",
+    "price": 18,
+    "nutrition": 10,
+    "category": "ингредиенты"
+  },
+  {
+    "id": "bento",
+    "name": "Бэнто",
+    "weight": 1,
+    "effect": "Готовый обед",
+    "type": "food",
+    "price": 45,
+    "nutrition": 30,
+    "category": "готовая еда"
+  },
+  {
+    "id": "ramen",
+    "name": "Рамен",
+    "weight": 1,
+    "effect": "Теплый обед из кафе",
+    "type": "food",
+    "price": 55,
+    "nutrition": 35,
+    "category": "готовая еда"
+  },
+  {
+    "id": "onigiri",
+    "name": "Онигири",
+    "weight": 1,
+    "effect": "Легкий перекус",
+    "type": "food",
+    "price": 25,
+    "nutrition": 18,
+    "category": "готовая еда"
   }
 ]

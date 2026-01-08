@@ -13,10 +13,10 @@ const CREATION_OPTIONS = {
 };
 
 const CITY_MAP = {
-  центр: ["квартира", "бар", "магазин одежды", "офис"],
-  трущобы: ["двор", "подворотня"],
-  элитный: ["галерея", "бутик"],
-  тюрьма: ["камера", "двор"]
+  порт: ["набережная", "рыбный рынок", "кафе", "офис"],
+  старый: ["улочки", "дом", "мастерская"],
+  центр: ["площадь", "магазин одежды", "магазин белья", "магазин еды"],
+  холмы: ["храм", "смотровая", "парк"]
 };
 
 class Randomizer {
@@ -78,9 +78,11 @@ class Character {
     this.health = profile.health;
     this.morale = profile.morale;
     this.energy = profile.energy;
+    this.hunger = profile.hunger;
     this.money = profile.money;
     this.reputation = profile.reputation;
     this.relationships = profile.relationships;
+    this.menstruation = profile.menstruation;
     if (profile.inventory instanceof Inventory) {
       this.inventory = profile.inventory;
     } else {
@@ -88,6 +90,12 @@ class Character {
       this.inventory.items = profile.inventory?.items || [];
     }
     this.property = profile.property;
+    this.equipment = profile.equipment || {
+      верх: null,
+      низ: null,
+      обувь: null,
+      белье: null
+    };
   }
 
   applyChange(change) {
@@ -109,6 +117,45 @@ class Character {
     if (typeof change.money === "number") {
       this.money = Math.max(0, this.money + change.money);
     }
+    if (typeof change.hunger === "number") {
+      this.hunger = Randomizer.clamp(this.hunger + change.hunger, 0, 100);
+    }
+  }
+
+  isNaked() {
+    return Object.values(this.equipment).every((item) => !item);
+  }
+
+  applyItemEffects(item, direction = 1) {
+    if (!item) return;
+    if (item.effectStats) {
+      const statsDelta = Object.entries(item.effectStats).reduce((acc, [key, value]) => {
+        acc[key] = value * direction;
+        return acc;
+      }, {});
+      this.applyChange({ stats: statsDelta });
+    }
+    if (item.effectMorale) {
+      this.applyChange({ morale: item.effectMorale * direction });
+    }
+  }
+
+  equipItem(slot, item) {
+    if (!item) return;
+    const current = this.equipment[slot];
+    if (current?.id === item.id) return;
+    if (current) {
+      this.applyItemEffects(current, -1);
+    }
+    this.equipment[slot] = item;
+    this.applyItemEffects(item, 1);
+  }
+
+  unequipItem(slot) {
+    const current = this.equipment[slot];
+    if (!current) return;
+    this.applyItemEffects(current, -1);
+    this.equipment[slot] = null;
   }
 }
 
@@ -196,6 +243,15 @@ class Parser {
     if (clean.includes("карта")) {
       return { intent: "map" };
     }
+    if (clean.includes("белье") && clean.includes("магазин")) {
+      return { intent: "lingerie" };
+    }
+    if (clean.includes("еда") || clean.includes("продукт")) {
+      return { intent: "foodshop" };
+    }
+    if (clean.includes("кафе")) {
+      return { intent: "cafe" };
+    }
     if (clean.includes("магазин")) {
       return { intent: "shop" };
     }
@@ -219,6 +275,21 @@ class Parser {
     }
     if (clean.includes("достав")) {
       return { intent: "deliver" };
+    }
+    if (clean.includes("гардероб")) {
+      return { intent: "wardrobe" };
+    }
+    if (clean.includes("надеть")) {
+      return { intent: "wear", item: clean.replace("надеть", "").trim() };
+    }
+    if (clean.includes("снять")) {
+      return { intent: "remove", item: clean.replace("снять", "").trim() };
+    }
+    if (clean.includes("готовить")) {
+      return { intent: "cook" };
+    }
+    if (clean.includes("есть") || clean.includes("поесть")) {
+      return { intent: "eat" };
     }
     return { intent: "free", text: input };
   }
@@ -309,6 +380,7 @@ class Game {
     this.logElement = document.getElementById("log");
     this.mapElement = document.getElementById("map");
     this.availableActionsElement = document.getElementById("available-actions");
+    this.actionButtonsElement = document.getElementById("action-buttons");
     this.input = document.getElementById("player-input");
     this.sendAction = document.getElementById("send-action");
     this.newGame = document.getElementById("new-game");
@@ -354,13 +426,27 @@ class Game {
     });
     this.saveGame.addEventListener("click", () => this.save());
     this.loadGame.addEventListener("click", () => this.load());
+    if (this.actionButtonsElement) {
+      this.actionButtonsElement.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) return;
+        const value = button.dataset.action;
+        if (!value) return;
+        if (this.pendingMenu) {
+          this.handleMenuSelection(value);
+          return;
+        }
+        this.lastAction = value;
+        this.runTurn(value);
+      });
+    }
   }
 
   async bootstrap() {
     await this.loadData();
     this.renderer.renderEntry({
-      narrative: "Город мерцает неоном, а ваши возможности — ровно настолько широки, насколько вы решитесь их расширить.",
-      system: "Нажмите «Создать персонажа», чтобы начать новое приключение."
+      narrative: "Прибрежный город встречает вас солью в воздухе, фонариками и мягким шумом прибоя.",
+      system: "Нажмите «Создать персонажа», чтобы начать путешествие."
     });
   }
 
@@ -388,15 +474,18 @@ class Game {
     this.profileDraft = {
       stats: { strength: 5, agility: 5, flexibility: 5, charisma: 5, intellect: 5 },
       skills: { dance: 1, persuasion: 1, streetwise: 1, combat: 1 },
-      appearance: { height: 170, weight: 65, hips: 5, waist: 5, chest: 5, glutes: 5, face: 6 },
+      appearance: { height: 170, weight: 65, waist: 5, face: 6, shoulders: 5, hips: 5, chest: 5, glutes: 5, phallus: 5 },
       health: { hp: 100 },
       energy: 80,
       morale: 10,
+      hunger: 80,
       money: 120,
       reputation: { police: 0, underworld: 0, syndicate: 0 },
       relationships: [],
       inventory: new Inventory(25),
-      property: { address: "Не указано", size: "комната", furniture: [] }
+      property: { address: "Старый квартал", size: "комната", furniture: [] },
+      menstruation: null,
+      equipment: { верх: null, низ: null, обувь: null, белье: null }
     };
     this.creationQueue = [
       { key: "name", prompt: "Имя героя?" },
@@ -406,7 +495,6 @@ class Game {
       { key: "traits", prompt: `Выберите 1-2 черты (варианты: ${CREATION_OPTIONS.traits.join(", ")})?` },
       { key: "background", prompt: `Фон (варианты: ${CREATION_OPTIONS.backgrounds.join(", ")})?` },
       { key: "stats", prompt: "Распределите 50 очков статов (сила, ловкость, гибкость, харизма, интеллект). Формат: сила 10, ловкость 10, гибкость 10, харизма 10, интеллект 10." },
-      { key: "appearance", prompt: "Внешность: рост, вес, бедра, талия, грудь, ягодицы, лицо (1-10). Пример: рост 170, вес 65, бедра 6, талия 5, грудь 5, ягодицы 6, лицо 7." },
       { key: "confirm", prompt: "Подтвердить создание? (да/нет)" }
     ];
     this.currentQuestion = 0;
@@ -418,8 +506,9 @@ class Game {
     const question = this.creationQueue[this.currentQuestion];
     if (!question) return;
     this.reset();
+    const prompt = this.getQuestionPrompt(question);
     this.renderer.renderEntry({
-      dialogue: `Создание персонажа: ${question.prompt}`,
+      dialogue: `Создание персонажа: ${prompt}`,
       system: "Введите ответ в поле ниже."
     });
   }
@@ -459,6 +548,7 @@ class Game {
           return;
         }
         this.profileDraft.gender = value.toLowerCase();
+        this.injectAppearanceQuestions();
         break;
       case "age":
         this.profileDraft.age = Number.parseInt(value, 10);
@@ -495,18 +585,21 @@ class Game {
         }
         this.profileDraft.background = value.toLowerCase();
         break;
-      case "stats":
-        if (!this.applyStats(value)) {
+      case "appearance":
+        if (!this.applyAppearance(value)) {
           this.renderer.renderEntry({
-            system: "Не удалось разобрать статы или сумма не равна 50. Попробуйте снова."
+            system: "Не удалось разобрать внешность. Проверьте формат."
           });
           return;
         }
         break;
-      case "appearance":
-        if (!this.applyAppearance(value)) {
+      case "menstruation":
+        this.profileDraft.menstruation = value.toLowerCase().startsWith("д") ? "да" : "нет";
+        break;
+      case "stats":
+        if (!this.applyStats(value)) {
           this.renderer.renderEntry({
-            system: "Не удалось разобрать внешность. Проверьте формат." 
+            system: "Не удалось разобрать статы или сумма не равна 50. Попробуйте снова."
           });
           return;
         }
@@ -546,6 +639,35 @@ class Game {
     return true;
   }
 
+  injectAppearanceQuestions() {
+    const hasAppearance = this.creationQueue.some((question) => question.key === "appearance");
+    if (hasAppearance) return;
+    const insertIndex = this.creationQueue.findIndex((question) => question.key === "confirm");
+    const appearanceQuestion = { key: "appearance", prompt: "" };
+    const questions = [appearanceQuestion];
+    if (this.profileDraft.gender === "женский") {
+      questions.push({ key: "menstruation", prompt: "Месячные сейчас? (да/нет)" });
+    }
+    if (insertIndex === -1) {
+      this.creationQueue.push(...questions);
+    } else {
+      this.creationQueue.splice(insertIndex, 0, ...questions);
+    }
+  }
+
+  getQuestionPrompt(question) {
+    if (question.key === "appearance") {
+      if (this.profileDraft.gender === "мужской") {
+        return "Внешность: рост, вес, плечи, талия, лицо (1-10), размер. Пример: рост 178, вес 78, плечи 6, талия 5, лицо 6, размер 6.";
+      }
+      return "Внешность: рост, вес, бедра, талия, грудь, ягодицы, лицо (1-10). Пример: рост 170, вес 65, бедра 6, талия 5, грудь 5, ягодицы 6, лицо 7.";
+    }
+    if (question.key === "menstruation") {
+      return "Месячные сейчас? (да/нет)";
+    }
+    return question.prompt;
+  }
+
   applyStats(value) {
     const mapping = {
       сила: "strength",
@@ -574,15 +696,25 @@ class Game {
   }
 
   applyAppearance(value) {
-    const map = {
-      рост: "height",
-      вес: "weight",
-      бедра: "hips",
-      талия: "waist",
-      грудь: "chest",
-      ягодицы: "glutes",
-      лицо: "face"
-    };
+    const map =
+      this.profileDraft.gender === "мужской"
+        ? {
+            рост: "height",
+            вес: "weight",
+            плечи: "shoulders",
+            талия: "waist",
+            лицо: "face",
+            размер: "phallus"
+          }
+        : {
+            рост: "height",
+            вес: "weight",
+            бедра: "hips",
+            талия: "waist",
+            грудь: "chest",
+            ягодицы: "glutes",
+            лицо: "face"
+          };
 
     const entries = value.split(",").map((chunk) => chunk.trim());
     const appearance = { ...this.profileDraft.appearance };
@@ -602,21 +734,22 @@ class Game {
   getStartLocation(background) {
     const normalized = background?.toLowerCase();
     if (normalized === "улица") {
-      return { district: "трущобы", place: "двор" };
+      return { district: "порт", place: "набережная" };
     }
     if (normalized === "работа") {
-      return { district: "центр", place: "офис" };
+      return { district: "порт", place: "офис" };
     }
     if (normalized === "учеба") {
-      return { district: "центр", place: "квартира" };
+      return { district: "центр", place: "площадь" };
     }
-    return { district: "центр", place: "квартира" };
+    return { district: "старый", place: "дом" };
   }
 
   finishCreation() {
     this.character = new Character(this.profileDraft);
     const starterItems = this.data.items.filter((item) => ["cash", "phone"].includes(item.id));
     starterItems.forEach((item) => this.character.inventory.add(item));
+    this.equipStarterOutfit();
     const startConfig = this.getStartLocation(this.profileDraft.background);
     this.world = new World({
       districts: Object.keys(CITY_MAP),
@@ -635,14 +768,15 @@ class Game {
 
     this.reset();
     this.renderer.renderEntry({
-      narrative: `Добро пожаловать в мегаполис. ${this.character.name} начинает путь: ${this.world.activeDistrict}, ${this.world.activePlace}.`,
-      system: "Введите действие или нажмите «Следующий ход»."
+      narrative: `Добро пожаловать в прибрежный город. ${this.character.name} начинает путь: ${this.world.activeDistrict}, ${this.world.activePlace}.`,
+      system: "Введите действие или выберите кнопку."
     });
     this.renderStatus();
     this.renderMap();
     this.renderAvailableActions();
     this.moveNpcs();
     this.renderNpcList();
+    this.renderActionButtons();
   }
 
   runTurn(forcedAction = "") {
@@ -680,7 +814,9 @@ class Game {
     this.renderStatus();
     this.renderMap();
     this.renderAvailableActions();
+    this.moveNpcs();
     this.renderNpcList();
+    this.renderActionButtons();
   }
 
   resolveAction(input) {
@@ -710,6 +846,12 @@ class Game {
         return this.handlePhoneAction();
       case "shop":
         return this.handleShopAction();
+      case "lingerie":
+        return this.handleLingerieShopAction();
+      case "foodshop":
+        return this.handleFoodShopAction();
+      case "cafe":
+        return this.handleCafeAction();
       case "buy":
         return this.handleBuyAction(parsed.item);
       case "npc":
@@ -724,6 +866,16 @@ class Game {
         return this.handlePickupAction();
       case "deliver":
         return this.handleDeliverAction();
+      case "wardrobe":
+        return this.handleWardrobeAction();
+      case "wear":
+        return this.handleWearAction(parsed.item);
+      case "remove":
+        return this.handleRemoveAction(parsed.item);
+      case "cook":
+        return this.handleCookAction();
+      case "eat":
+        return this.handleEatAction();
       case "map":
         return {
           narrative: "Карта обновлена. Вы осматриваете доступные районы и точки.",
@@ -742,14 +894,21 @@ class Game {
       default:
         return {
           narrative: "Вы делаете паузу, оценивая варианты.",
-          options: ["Тренироваться", "Пойти в бар", "Проверить дом"]
+          options: ["Тренироваться", "Пойти на набережную", "Проверить дом"]
         };
     }
   }
 
   applyPassiveEffects() {
+    this.character.applyChange({ hunger: -4 });
+    if (this.character.hunger <= 20) {
+      this.character.applyChange({ health: { hp: -2 }, energy: -2, morale: -2 });
+    }
     if (this.character.energy <= 20) {
       this.character.applyChange({ health: { hp: -2 }, morale: -2 });
+    }
+    if (this.character.isNaked()) {
+      this.character.applyChange({ morale: -3 });
     }
   }
 
@@ -780,7 +939,7 @@ class Game {
     if (this.world.activePlace !== "офис") {
       return {
         narrative: "Для начала смены нужно отметиться в офисе логистики.",
-        system: "Перейдите в «центр, офис»."
+        system: "Перейдите в «порт, офис»."
       };
     }
 
@@ -795,7 +954,8 @@ class Game {
     this.activeDelivery = {
       tasks,
       completed: 0,
-      pickup: { district: "центр", place: "офис" },
+      pickedUp: false,
+      pickup: { district: "порт", place: "офис" },
       dropoff: this.getRandomDropoff()
     };
 
@@ -808,7 +968,8 @@ class Game {
 
   handleSocialAction(responses, genderTag) {
     const genderBonus = this.character.gender === "женский" ? 5 : 0;
-    const chance = this.getStatCheck("charisma", 50 + genderBonus);
+    const nudityPenalty = this.character.isNaked() ? -20 : 0;
+    const chance = this.getStatCheck("charisma", 50 + genderBonus + nudityPenalty);
     const success = Randomizer.roll(chance);
     this.character.applyChange({ morale: success ? 3 : -1, energy: -2 });
 
@@ -817,8 +978,9 @@ class Game {
         ? `${genderTag} легко вступает в разговор, и люди открываются быстрее обычного.`
         : "Разговор идет сдержанно, придется поработать над подходом.",
       dialogue: Randomizer.pick(
-        responses.smalltalk || ["Сосед: " + "Неон снова меркнет, а я только кофе налил."]
-      )
+        responses.smalltalk || ["Сосед: " + "Море сегодня спокойное, можно передохнуть."]
+      ),
+      system: this.character.isNaked() ? "Люди явно смущены вашим видом." : null
     };
   }
 
@@ -835,15 +997,25 @@ class Game {
         system: "Сначала начните смену в офисе."
       };
     }
+    if (this.activeDelivery.pickedUp) {
+      return {
+        narrative: "Посылка уже у вас.",
+        system: "Пора доставлять."
+      };
+    }
 
-    if (this.world.activeDistrict !== "центр" || this.world.activePlace !== "офис") {
+    if (
+      this.world.activeDistrict !== this.activeDelivery.pickup.district ||
+      this.world.activePlace !== this.activeDelivery.pickup.place
+    ) {
       return {
         narrative: "Посылка находится в офисе логистики.",
-        system: "Перейдите в «центр, офис»."
+        system: "Перейдите в «порт, офис»."
       };
     }
 
     this.character.applyChange({ energy: -3 });
+    this.activeDelivery.pickedUp = true;
     return {
       narrative: "Вы забираете посылку и отправляетесь по маршруту.",
       system: `Адрес доставки: ${this.activeDelivery.dropoff.district}, ${this.activeDelivery.dropoff.place}.`,
@@ -856,6 +1028,12 @@ class Game {
       return {
         narrative: "Нет активных заказов для доставки.",
         system: "Сначала возьмите заказ."
+      };
+    }
+    if (!this.activeDelivery.pickedUp) {
+      return {
+        narrative: "Сначала нужно забрать посылку в офисе.",
+        system: "Перейдите в «порт, офис»."
       };
     }
 
@@ -918,6 +1096,7 @@ class Game {
   handlePhoneMenuSelection(selection) {
     const index = Number.parseInt(selection, 10) - 1;
     if (Number.isNaN(index) || index < 0) {
+      this.pendingMenu = null;
       return {
         narrative: "Нужно выбрать пункт меню по номеру.",
         system: "Например: 1"
@@ -926,6 +1105,7 @@ class Game {
 
     const option = this.pendingMenu.options[index];
     if (!option) {
+      this.pendingMenu = null;
       return {
         narrative: "Такого пункта нет.",
         system: "Попробуйте другой номер."
@@ -943,11 +1123,13 @@ class Game {
       const success = Randomizer.roll(chance);
       if (success) {
         this.character.job = "курьер";
+        this.pendingMenu = null;
         return {
           narrative: "Заявка принята. Контракт на курьерскую работу активирован.",
           system: "Новая работа: курьер."
         };
       }
+      this.pendingMenu = null;
       return {
         narrative: "Ответ пока не пришел. Возможно, стоит улучшить навыки.",
         system: "Попробуйте снова позже."
@@ -955,12 +1137,14 @@ class Game {
     }
 
     if (option === "Проверить статус") {
+      this.pendingMenu = null;
       return {
         narrative: "Вы просматриваете сообщения.",
         system: `Статус: ${this.character.job}.`
       };
     }
 
+    this.pendingMenu = null;
     return {
       narrative: "Телефон свернут.",
       system: "Меню закрыто."
@@ -975,7 +1159,7 @@ class Game {
       };
     }
 
-    const stock = this.getShopStock();
+    const stock = this.getShopStock("clothing");
     if (stock.length === 0) {
       return { narrative: "Полки пусты. Похоже, нужно завезти новые модели." };
     }
@@ -984,7 +1168,8 @@ class Game {
     this.pendingMenu = {
       type: "shop",
       stock,
-      categories
+      categories,
+      options: categories
     };
 
     return {
@@ -993,9 +1178,91 @@ class Game {
     };
   }
 
+  handleLingerieShopAction() {
+    if (this.world.activePlace !== "магазин белья") {
+      return {
+        narrative: "Это не магазин белья.",
+        system: "Переместитесь в «центр, магазин белья»."
+      };
+    }
+
+    const stock = this.getShopStock("lingerie");
+    if (stock.length === 0) {
+      return { narrative: "Полки пусты. Похоже, нужно завезти новые модели." };
+    }
+
+    const categories = this.getShopCategories(stock);
+    this.pendingMenu = {
+      type: "lingerie",
+      stock,
+      categories,
+      options: categories
+    };
+
+    return {
+      narrative: "Вы открываете каталог белья.",
+      options: categories.map((category, index) => `${index + 1}. ${category}`)
+    };
+  }
+
+  handleFoodShopAction() {
+    if (this.world.activePlace !== "магазин еды") {
+      return {
+        narrative: "Здесь нет продуктовых полок.",
+        system: "Переместитесь в «центр, магазин еды»."
+      };
+    }
+
+    const stock = this.getShopStock("food");
+    if (stock.length === 0) {
+      return { narrative: "Полки пусты. Похоже, доставка задержалась." };
+    }
+
+    const categories = this.getShopCategories(stock);
+    this.pendingMenu = {
+      type: "foodshop",
+      stock,
+      categories,
+      options: categories
+    };
+
+    return {
+      narrative: "Вы открываете витрину продуктового магазина.",
+      options: categories.map((category, index) => `${index + 1}. ${category}`)
+    };
+  }
+
+  handleCafeAction() {
+    if (this.world.activePlace !== "кафе") {
+      return {
+        narrative: "Кафе здесь нет.",
+        system: "Переместитесь в «порт, кафе»."
+      };
+    }
+
+    const stock = this.getShopStock("cafe");
+    if (stock.length === 0) {
+      return { narrative: "Сегодняшнее меню уже разобрали." };
+    }
+
+    this.pendingMenu = {
+      type: "cafe",
+      stock,
+      view: "category",
+      filtered: stock,
+      options: stock.map((item) => item.name)
+    };
+
+    return {
+      narrative: "Меню кафе на сегодня.",
+      options: stock.map((item, index) => `${index + 1}. ${item.name} (${item.price} кр.)`)
+    };
+  }
+
   handleShopMenuSelection(selection) {
     const index = Number.parseInt(selection, 10) - 1;
     if (Number.isNaN(index) || index < 0) {
+      this.pendingMenu = null;
       return {
         narrative: "Выберите номер товара.",
         system: "Например: 1"
@@ -1004,16 +1271,19 @@ class Game {
     if (this.pendingMenu.view === "category") {
       const item = this.pendingMenu.filtered[index];
       if (!item) {
+        this.pendingMenu = null;
         return {
           narrative: "Такого номера нет.",
           system: "Попробуйте другой."
         };
       }
+      this.pendingMenu = null;
       return this.handleBuyAction(item.name.toLowerCase());
     }
 
     const category = this.pendingMenu.categories[index];
     if (!category) {
+      this.pendingMenu = null;
       return {
         narrative: "Такого каталога нет.",
         system: "Попробуйте другой."
@@ -1023,6 +1293,7 @@ class Game {
     const filtered = this.pendingMenu.stock.filter((item) => item.category === category);
     this.pendingMenu.view = "category";
     this.pendingMenu.filtered = filtered;
+    this.pendingMenu.options = filtered.map((item) => item.name);
 
     return {
       narrative: `Каталог: ${category}.`,
@@ -1035,20 +1306,26 @@ class Game {
     if (this.pendingMenu.type === "phone") {
       result = this.handlePhoneMenuSelection(value);
     }
-    if (this.pendingMenu.type === "shop") {
+    if (["shop", "lingerie", "foodshop", "cafe"].includes(this.pendingMenu.type)) {
       result = this.handleShopMenuSelection(value);
     }
     if (this.pendingMenu.type === "npc") {
       result = this.handleNpcMenuSelection(value, this.pendingMenu.actionType || "talk");
     }
+    if (this.pendingMenu.type === "wardrobe") {
+      result = this.handleWardrobeMenuSelection(value);
+    }
+    if (this.pendingMenu.type === "eat") {
+      result = this.handleEatMenuSelection(value);
+    }
 
-    this.pendingMenu = null;
     if (result) {
       this.reset();
       this.renderer.renderEntry(result);
       this.renderStatus();
       this.renderMap();
       this.renderAvailableActions();
+      this.renderActionButtons();
     }
   }
 
@@ -1066,11 +1343,229 @@ class Game {
     return categories.length ? categories : ["прочее"];
   }
 
-  handleBuyAction(rawItemName) {
-    if (this.world.activePlace !== "магазин одежды") {
+  getClothingSlot(item) {
+    const category = item.category;
+    if (category === "верх") return "верх";
+    if (category === "низ" || category === "штаны") return "низ";
+    if (category === "обувь") return "обувь";
+    if (category === "белье") return "белье";
+    return "верх";
+  }
+
+  equipStarterOutfit() {
+    const outfitIds =
+      this.character.gender === "женский"
+        ? ["womens-top", "womens-skirt", "womens-shoes", "womens-underwear"]
+        : ["mens-tshirt", "mens-jeans", "mens-shoes", "mens-underwear"];
+    outfitIds.forEach((id) => {
+      const item = this.data.items.find((entry) => entry.id === id);
+      if (item) {
+        this.character.inventory.add(item);
+        const slot = this.getClothingSlot(item);
+        this.character.equipItem(slot, item);
+      }
+    });
+  }
+
+  normalizeSlot(rawSlot) {
+    if (!rawSlot) return null;
+    const slot = rawSlot.toLowerCase();
+    if (["верх", "низ", "обувь", "белье"].includes(slot)) return slot;
+    return null;
+  }
+
+  handleWardrobeAction() {
+    const clothingItems = this.character.inventory.items.filter((item) => item.type === "clothing");
+    const equipOptions = clothingItems.map((item) => `Надеть: ${item.name}`);
+    const unequipOptions = Object.entries(this.character.equipment)
+      .filter(([, item]) => item)
+      .map(([slot, item]) => `Снять: ${slot} (${item.name})`);
+    const options = [...equipOptions, ...unequipOptions];
+
+    if (!options.length) {
       return {
-        narrative: "Покупать одежду можно только в магазине.",
-        system: "Переместитесь в «магазин одежды»."
+        narrative: "В гардеробе пока пусто.",
+        system: "Купите одежду, чтобы переодеваться."
+      };
+    }
+
+    this.pendingMenu = {
+      type: "wardrobe",
+      options
+    };
+
+    return {
+      narrative: "Гардероб открыт.",
+      options: options.map((option, index) => `${index + 1}. ${option}`)
+    };
+  }
+
+  handleWardrobeMenuSelection(selection) {
+    const index = Number.parseInt(selection, 10) - 1;
+    if (Number.isNaN(index) || index < 0) {
+      this.pendingMenu = null;
+      return {
+        narrative: "Выберите номер.",
+        system: "Например: 1"
+      };
+    }
+    const option = this.pendingMenu.options[index];
+    if (!option) {
+      this.pendingMenu = null;
+      return {
+        narrative: "Такого номера нет.",
+        system: "Попробуйте другой."
+      };
+    }
+    if (option.startsWith("Надеть:")) {
+      const itemName = option.replace("Надеть:", "").trim().toLowerCase();
+      this.pendingMenu = null;
+      return this.handleWearAction(itemName);
+    }
+    if (option.startsWith("Снять:")) {
+      const slot = option.split(":")[1].trim().split(" ")[0];
+      this.pendingMenu = null;
+      return this.handleRemoveAction(slot);
+    }
+    this.pendingMenu = null;
+    return { narrative: "Гардероб закрыт." };
+  }
+
+  handleWearAction(rawItemName) {
+    if (!rawItemName) {
+      return {
+        narrative: "Укажите, что надеть.",
+        system: "Например: надеть Мужская рубашка."
+      };
+    }
+    const item = this.character.inventory.items.find(
+      (entry) => entry.name.toLowerCase() === rawItemName && entry.type === "clothing"
+    );
+    if (!item) {
+      return {
+        narrative: "Такой вещи нет в инвентаре.",
+        system: "Откройте гардероб для выбора."
+      };
+    }
+    if (item.gender !== "унисекс" && item.gender !== this.character.gender) {
+      return {
+        narrative: "Эта вещь не подходит по полу.",
+        system: "Выберите подходящий вариант."
+      };
+    }
+    const slot = this.getClothingSlot(item);
+    this.character.equipItem(slot, item);
+    return {
+      narrative: `Вы надеваете «${item.name}».`,
+      system: `Слот: ${slot}.`
+    };
+  }
+
+  handleRemoveAction(rawSlot) {
+    const slot = this.normalizeSlot(rawSlot);
+    if (!slot) {
+      return {
+        narrative: "Укажите слот для снятия.",
+        system: "Например: снять верх."
+      };
+    }
+    if (!this.character.equipment[slot]) {
+      return {
+        narrative: "В этом слоте ничего не надето.",
+        system: "Попробуйте другой слот."
+      };
+    }
+    const itemName = this.character.equipment[slot].name;
+    this.character.unequipItem(slot);
+    return {
+      narrative: `Вы снимаете «${itemName}».`,
+      system: `Слот: ${slot}.`
+    };
+  }
+
+  handleEatAction() {
+    const foodItems = this.character.inventory.items.filter((item) => item.type === "food");
+    if (!foodItems.length) {
+      return {
+        narrative: "В инвентаре нет еды.",
+        system: "Загляните в магазин еды или кафе."
+      };
+    }
+    this.pendingMenu = {
+      type: "eat",
+      items: foodItems,
+      options: foodItems.map((item) => item.name)
+    };
+    return {
+      narrative: "Что съесть?",
+      options: foodItems.map((item, index) => `${index + 1}. ${item.name}`)
+    };
+  }
+
+  handleEatMenuSelection(selection) {
+    const index = Number.parseInt(selection, 10) - 1;
+    if (Number.isNaN(index) || index < 0) {
+      this.pendingMenu = null;
+      return {
+        narrative: "Выберите номер блюда.",
+        system: "Например: 1"
+      };
+    }
+    const item = this.pendingMenu.items[index];
+    if (!item) {
+      this.pendingMenu = null;
+      return {
+        narrative: "Такого блюда нет.",
+        system: "Попробуйте другой."
+      };
+    }
+    this.character.inventory.remove(item.id);
+    this.character.applyChange({ hunger: item.nutrition || 15, morale: 2 });
+    this.pendingMenu = null;
+    return {
+      narrative: `Вы едите «${item.name}».`,
+      system: `Голод восстановлен на ${item.nutrition || 15}.`
+    };
+  }
+
+  handleCookAction() {
+    if (this.world.activePlace !== "дом") {
+      return {
+        narrative: "Готовить можно только дома.",
+        system: "Переместитесь в «старый, дом»."
+      };
+    }
+    const ingredients = this.character.inventory.items.filter(
+      (item) => item.type === "food" && item.category === "ингредиенты"
+    );
+    if (ingredients.length < 2) {
+      return {
+        narrative: "Недостаточно ингредиентов для готовки.",
+        system: "Купите продукты в магазине еды."
+      };
+    }
+    const used = ingredients.slice(0, 2);
+    used.forEach((item) => this.character.inventory.remove(item.id));
+    const meal = this.data.items.find((item) => item.id === "bento") || {
+      id: "home-meal",
+      name: "Домашний обед",
+      weight: 1,
+      type: "food",
+      nutrition: 30
+    };
+    this.character.inventory.add(meal);
+    this.character.applyChange({ morale: 2, energy: -2 });
+    return {
+      narrative: "Вы готовите простой домашний обед.",
+      system: "Блюдо добавлено в инвентарь."
+    };
+  }
+  handleBuyAction(rawItemName) {
+    const validPlaces = ["магазин одежды", "магазин белья", "магазин еды", "кафе"];
+    if (!validPlaces.includes(this.world.activePlace)) {
+      return {
+        narrative: "Покупки доступны только в магазинах или кафе.",
+        system: "Переместитесь в подходящее место."
       };
     }
 
@@ -1081,7 +1576,14 @@ class Game {
       };
     }
 
-    const stock = this.getShopStock();
+    const shopType = this.world.activePlace === "магазин белья"
+      ? "lingerie"
+      : this.world.activePlace === "магазин еды"
+        ? "food"
+        : this.world.activePlace === "кафе"
+          ? "cafe"
+          : "clothing";
+    const stock = this.getShopStock(shopType);
     const item = stock.find((entry) => entry.name.toLowerCase() === rawItemName);
     if (!item) {
       return {
@@ -1112,12 +1614,26 @@ class Game {
     };
   }
 
-  getShopStock() {
+  getShopStock(shopType = "clothing") {
     const gender = this.character.gender;
-    return this.data.items
+    if (shopType === "food") {
+      return this.data.items
+        .filter((item) => item.type === "food" && item.category === "ингредиенты")
+        .map((item) => ({ ...item, price: item.price || 20 }));
+    }
+    if (shopType === "cafe") {
+      return this.data.items
+        .filter((item) => item.type === "food" && item.category === "готовая еда")
+        .map((item) => ({ ...item, price: item.price || 50 }));
+    }
+    const clothingItems = this.data.items
       .filter((item) => item.type === "clothing")
-      .filter((item) => item.gender === "унисекс" || item.gender === gender)
-      .map((item) => ({ ...item, price: item.price || 60 }));
+      .filter((item) => item.gender === "унисекс" || item.gender === gender);
+    const filtered =
+      shopType === "lingerie"
+        ? clothingItems.filter((item) => item.category === "белье")
+        : clothingItems.filter((item) => item.category !== "белье");
+    return filtered.map((item) => ({ ...item, price: item.price || 60 }));
   }
 
   getAvailableActions() {
@@ -1134,18 +1650,124 @@ class Game {
       }
     });
     actions.push("Осмотреться", "Карта", "Общаться");
-    actions.push("НПС", "Поговорить", "Флиртовать", "Подружиться");
 
     if (this.world.activePlace === "магазин одежды") {
-      actions.push("Магазин", "Купить <название>");
+      actions.push("Магазин одежды");
+    }
+    if (this.world.activePlace === "магазин белья") {
+      actions.push("Магазин белья");
+    }
+    if (this.world.activePlace === "магазин еды") {
+      actions.push("Магазин еды");
+    }
+    if (this.world.activePlace === "кафе") {
+      actions.push("Кафе");
+    }
+    if (this.world.activePlace === "дом") {
+      actions.push("Готовить");
     }
 
     if (this.character.inventory.items.some((item) => item.id === "phone")) {
       actions.push("Телефон");
     }
 
+    if (this.character.inventory.items.some((item) => item.type === "food")) {
+      actions.push("Поесть");
+    }
+
+    if (this.character.inventory.items.some((item) => item.type === "clothing")) {
+      actions.push("Гардероб");
+    }
+
+    const nearby = this.getNearbyNpcs();
+    if (nearby.length) {
+      actions.push("НПС", "Поговорить", "Флиртовать", "Подружиться");
+    }
+
     if (this.character.job === "курьер") {
-      actions.push("Работа", "Взять заказ", "Доставить заказ");
+      if (!this.activeDelivery && this.world.activePlace === "офис") {
+        actions.push("Работа");
+      }
+      if (this.activeDelivery && !this.activeDelivery.pickedUp && this.world.activePlace === "офис") {
+        actions.push("Взять заказ");
+      }
+      if (this.activeDelivery?.pickedUp) {
+        const { dropoff } = this.activeDelivery;
+        if (
+          this.world.activeDistrict === dropoff.district &&
+          this.world.activePlace === dropoff.place
+        ) {
+          actions.push("Доставить заказ");
+        }
+      }
+    }
+
+    return actions;
+  }
+
+  getContextualActions() {
+    if (this.pendingMenu?.options) {
+      return this.pendingMenu.options.map((option, index) => ({
+        label: option,
+        value: String(index + 1)
+      }));
+    }
+    const actions = [];
+    actions.push({ label: "Осмотреться", value: "осмотреться" });
+    actions.push({ label: "Карта", value: "карта" });
+
+    if (this.character.inventory.items.some((item) => item.id === "phone")) {
+      actions.push({ label: "Телефон", value: "телефон" });
+    }
+
+    if (this.world.activePlace === "магазин одежды") {
+      actions.push({ label: "Каталог одежды", value: "магазин" });
+    }
+    if (this.world.activePlace === "магазин белья") {
+      actions.push({ label: "Каталог белья", value: "магазин белья" });
+    }
+    if (this.world.activePlace === "магазин еды") {
+      actions.push({ label: "Магазин еды", value: "магазин еды" });
+    }
+    if (this.world.activePlace === "кафе") {
+      actions.push({ label: "Кафе", value: "кафе" });
+    }
+    if (this.world.activePlace === "дом") {
+      actions.push({ label: "Готовить", value: "готовить" });
+    }
+
+    if (this.character.inventory.items.some((item) => item.type === "food")) {
+      actions.push({ label: "Поесть", value: "поесть" });
+    }
+
+    const nearby = this.getNearbyNpcs();
+    if (nearby.length) {
+      actions.push({ label: "НПС", value: "нпс" });
+      actions.push({ label: "Поговорить", value: "поговорить" });
+      actions.push({ label: "Подружиться", value: "подружиться" });
+      actions.push({ label: "Флиртовать", value: "флиртовать" });
+    }
+
+    if (this.character.inventory.items.some((item) => item.type === "clothing")) {
+      actions.push({ label: "Гардероб", value: "гардероб" });
+    }
+
+    if (this.character.job === "курьер") {
+      if (!this.activeDelivery && this.world.activePlace === "офис") {
+        actions.push({ label: "Работа", value: "работа" });
+      }
+      if (this.activeDelivery && !this.activeDelivery.pickedUp && this.world.activePlace === "офис") {
+        actions.push({ label: "Взять заказ", value: "взять заказ" });
+      }
+      if (this.activeDelivery?.pickedUp) {
+        const { dropoff } = this.activeDelivery;
+        if (
+          this.world.activeDistrict === dropoff.district &&
+          this.world.activePlace === dropoff.place
+        ) {
+          actions.push({ label: "Доставить заказ", value: "доставить заказ" });
+        }
+      }
     }
 
     return actions;
@@ -1179,6 +1801,19 @@ class Game {
     });
   }
 
+  renderActionButtons() {
+    if (!this.actionButtonsElement) return;
+    this.actionButtonsElement.innerHTML = "";
+    const actions = this.getContextualActions();
+    actions.forEach((action) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = action.label;
+      button.dataset.action = action.value;
+      this.actionButtonsElement.appendChild(button);
+    });
+  }
+
   renderNpcList() {
     const nearby = this.getNearbyNpcs();
     const info = nearby.length
@@ -1207,11 +1842,13 @@ class Game {
         ["HP", this.character.health.hp],
         ["Энергия", this.character.energy],
         ["Мораль", this.character.morale],
+        ["Голод", this.character.hunger],
         ["Деньги", `${this.character.money}`],
         ["Работа", this.character.job],
         ["День", this.world.time.day],
         ["Час", `${this.world.time.hour}:00`],
-        ["Локация", `${this.world.activeDistrict}, ${this.world.activePlace}`]
+        ["Локация", `${this.world.activeDistrict}, ${this.world.activePlace}`],
+        ["Статус", this.character.isNaked() ? (this.character.gender === "женский" ? "голая" : "голый") : "одет(а)"]
       ]
     };
 
@@ -1231,9 +1868,43 @@ class Game {
       ]
     };
 
+    const appearanceRows =
+      this.character.gender === "мужской"
+        ? [
+            ["Рост", this.character.appearance.height],
+            ["Вес", this.character.appearance.weight],
+            ["Плечи", this.character.appearance.shoulders],
+            ["Талия", this.character.appearance.waist],
+            ["Лицо", this.character.appearance.face],
+            ["Размер", this.character.appearance.phallus]
+          ]
+        : [
+            ["Рост", this.character.appearance.height],
+            ["Вес", this.character.appearance.weight],
+            ["Бедра", this.character.appearance.hips],
+            ["Талия", this.character.appearance.waist],
+            ["Грудь", this.character.appearance.chest],
+            ["Ягодицы", this.character.appearance.glutes],
+            ["Лицо", this.character.appearance.face],
+            ["Месячные", this.character.menstruation ?? "нет"]
+          ];
+
+    const appearanceTable = {
+      headers: ["Внешность", "Значение"],
+      rows: appearanceRows
+    };
+
+    const equipmentTable = {
+      headers: ["Одежда", "Надето"],
+      rows: Object.entries(this.character.equipment).map(([slot, item]) => [
+        slot,
+        item ? item.name : "нет"
+      ])
+    };
+
     this.renderer.renderEntry({
       system: "Статус обновлен.",
-      tables: [statsTable, healthTable, inventoryTable, propertyTable]
+      tables: [statsTable, healthTable, appearanceTable, equipmentTable, inventoryTable, propertyTable]
     });
   }
 
@@ -1284,6 +1955,7 @@ class Game {
   handleNpcMenuSelection(selection, actionType) {
     const index = Number.parseInt(selection, 10) - 1;
     if (Number.isNaN(index) || index < 0) {
+      this.pendingMenu = null;
       return {
         narrative: "Выберите номер персонажа.",
         system: "Например: 1"
@@ -1291,11 +1963,13 @@ class Game {
     }
     const npc = this.pendingMenu.npcs[index];
     if (!npc) {
+      this.pendingMenu = null;
       return {
         narrative: "Такого номера нет.",
         system: "Попробуйте другой."
       };
     }
+    this.pendingMenu = null;
     return this.resolveNpcInteraction(npc, actionType);
   }
 
@@ -1322,9 +1996,10 @@ class Game {
 
   resolveNpcInteraction(npc, actionType) {
     const base = actionType === "flirt" ? 45 : actionType === "befriend" ? 50 : 55;
-    const chance = this.getStatCheck("charisma", base);
+    const nudityPenalty = this.character.isNaked() ? -25 : 0;
+    const chance = this.getStatCheck("charisma", base + nudityPenalty);
     const success = Randomizer.roll(chance);
-    const delta = success ? 5 : -2;
+    const delta = success ? 5 : this.character.isNaked() ? -6 : -2;
     npc.relationship = Randomizer.clamp(npc.relationship + delta, -100, 100);
     this.character.applyChange({ morale: success ? 2 : -1, energy: -1 });
 
@@ -1332,7 +2007,9 @@ class Game {
       actionType === "flirt" ? "флиртуете" : actionType === "befriend" ? "налаживаете контакт" : "разговариваете";
     return {
       narrative: `Вы ${actionLabel} с ${npc.name}.`,
-      system: `Отношение: ${npc.relationship} (${success ? "+" : ""}${delta}).`
+      system: `Отношение: ${npc.relationship} (${success ? "+" : ""}${delta}).${
+        this.character.isNaked() ? " Выглядите неуместно, и это замечают." : ""
+      }`
     };
   }
 
@@ -1381,6 +2058,7 @@ class Game {
     this.renderAvailableActions();
     this.moveNpcs();
     this.renderNpcList();
+    this.renderActionButtons();
   }
 
   reset() {
