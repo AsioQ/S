@@ -82,5 +82,138 @@
     "role": "администратор",
     "schedule": "утро",
     "relationship": 2
+  },
+  {
+    "id": "nao",
+    "name": "Нао",
+    "role": "продавец",
+    "schedule": "день",
+    "relationship": 0
+  },
+  {
+    "id": "kaito",
+    "name": "Кайто",
+    "role": "студент",
+    "schedule": "день",
+    "relationship": 0
+  },
+  {
+    "id": "mei",
+    "name": "Мэй",
+    "role": "художник",
+    "schedule": "утро",
+    "relationship": 1
+  },
+  {
+    "id": "shun",
+    "name": "Шун",
+    "role": "рыбак",
+    "schedule": "утро",
+    "relationship": 0
+  },
+  {
+    "id": "riko",
+    "name": "Рико",
+    "role": "библиотекарь",
+    "schedule": "день",
+    "relationship": 2
+  },
+  {
+    "id": "akira",
+    "name": "Акира",
+    "role": "техник",
+    "schedule": "день",
+    "relationship": -1
+  },
+  {
+    "id": "yori",
+    "name": "Йори",
+    "role": "пекарь",
+    "schedule": "утро",
+    "relationship": 1
+  },
+  {
+    "id": "saki",
+    "name": "Саки",
+    "role": "учитель",
+    "schedule": "день",
+    "relationship": 2
+  },
+  {
+    "id": "haru",
+    "name": "Хару",
+    "role": "садовник",
+    "schedule": "утро",
+    "relationship": 0
+  },
+  {
+    "id": "rin",
+    "name": "Рин",
+    "role": "фотограф",
+    "schedule": "вечер",
+    "relationship": 1
+  },
+  {
+    "id": "masa",
+    "name": "Маса",
+    "role": "охранник",
+    "schedule": "ночь",
+    "relationship": 0
+  },
+  {
+    "id": "aya",
+    "name": "Ая",
+    "role": "доктор",
+    "schedule": "день",
+    "relationship": 1
+  },
+  {
+    "id": "keiko",
+    "name": "Кэйко",
+    "role": "портной",
+    "schedule": "день",
+    "relationship": 0
+  },
+  {
+    "id": "jin",
+    "name": "Джин",
+    "role": "повар",
+    "schedule": "вечер",
+    "relationship": 1
+  },
+  {
+    "id": "momo",
+    "name": "Момо",
+    "role": "студент",
+    "schedule": "день",
+    "relationship": 0
+  },
+  {
+    "id": "ryu",
+    "name": "Рю",
+    "role": "спортсмен",
+    "schedule": "вечер",
+    "relationship": 0
+  },
+  {
+    "id": "nori",
+    "name": "Нори",
+    "role": "гид",
+    "schedule": "день",
+    "relationship": 0
+  },
+  {
+    "id": "tsuba",
+    "name": "Цуба",
+    "role": "музыкант",
+    "schedule": "вечер",
+    "relationship": 1
+  },
+  {
+    "id": "umi",
+    "name": "Уми",
+    "role": "продавец",
+    "schedule": "день",
+    "relationship": 0
   }
 ]
