@@ -284,16 +284,16 @@ class Parser {
     if (clean.includes("карта")) {
       return { intent: "map" };
     }
-    if (clean.includes("белье") && clean.includes("магазин")) {
+    if (clean.includes("бель") && clean.includes("магазин")) {
       return { intent: "lingerie" };
     }
-    if (clean.includes("еда") || clean.includes("продукт")) {
+    if (clean.includes("ед") || clean.includes("продукт")) {
       return { intent: "foodshop" };
     }
     if (clean.includes("кафе")) {
       return { intent: "cafe" };
     }
-    if (clean.includes("техника") && clean.includes("магазин")) {
+    if (clean.includes("техник") && clean.includes("магазин")) {
       return { intent: "techshop" };
     }
     if (clean.includes("магазин")) {
@@ -392,7 +392,17 @@ class Renderer {
     this.logElement.appendChild(entry);
   }
 
-  renderTable({ headers, rows }) {
+  renderTable({ title, headers, rows }) {
+    const wrapper = document.createElement("details");
+    wrapper.className = "table-wrapper";
+    wrapper.open = true;
+
+    if (title) {
+      const summary = document.createElement("summary");
+      summary.textContent = title;
+      wrapper.appendChild(summary);
+    }
+
     const table = document.createElement("table");
     table.className = "markdown-table";
 
@@ -418,7 +428,8 @@ class Renderer {
     });
     table.appendChild(tbody);
 
-    return table;
+    wrapper.appendChild(table);
+    return wrapper;
   }
 }
 
@@ -1483,21 +1494,22 @@ class Game {
     }
 
     const stock = this.getShopStock("cafe");
+    const pricedStock = stock.map((item) => ({ ...item, price: item.price || 50 }));
     if (stock.length === 0) {
       return { narrative: "Сегодняшнее меню уже разобрали." };
     }
 
     this.pendingMenu = {
       type: "cafe",
-      stock,
+      stock: pricedStock,
       view: "category",
-      filtered: stock,
-      options: stock.map((item) => item.name)
+      filtered: pricedStock,
+      options: pricedStock.map((item) => item.name)
     };
 
     return {
       narrative: "Меню кафе на сегодня.",
-      options: stock.map((item, index) => `${index + 1}. ${item.name} (${item.price} кр.)`)
+      options: pricedStock.map((item, index) => `${index + 1}. ${item.name} (${item.price} кр.)`)
     };
   }
 
@@ -1517,6 +1529,22 @@ class Game {
         return {
           narrative: "Такого номера нет.",
           system: "Попробуйте другой."
+        };
+      }
+      if (this.pendingMenu.type === "cafe") {
+        const price = item.price || 50;
+        if (this.character.money < price) {
+          this.pendingMenu = null;
+          return {
+            narrative: "Недостаточно средств.",
+            system: `Нужно ${price} кредитов.`
+          };
+        }
+        this.character.applyChange({ hunger: item.nutrition || 15, morale: 2, money: -price });
+        this.pendingMenu = null;
+        return {
+          narrative: `Вы заказываете «${item.name}».`,
+          system: "Блюдо сразу съедено, голод восстановлен."
         };
       }
       this.pendingMenu = null;
@@ -1619,11 +1647,13 @@ class Game {
         this.character.inventory.add(item);
         const slot = this.getEquipmentSlot(item);
         this.character.equipItem(slot, item);
+        this.character.inventory.remove(item.id);
       }
     });
     const phone = this.data.items.find((entry) => entry.id === "phone");
     if (phone) {
       this.character.equipItem("гаджет", phone);
+      this.character.inventory.remove(phone.id);
     }
   }
 
@@ -1700,11 +1730,12 @@ class Game {
         system: "Например: надеть Мужская рубашка."
       };
     }
-    const item = this.character.inventory.items.find(
+    const itemIndex = this.character.inventory.items.findIndex(
       (entry) =>
         entry.name.toLowerCase() === rawItemName &&
         (entry.type === "clothing" || entry.type === "device")
     );
+    const item = itemIndex !== -1 ? this.character.inventory.items[itemIndex] : null;
     if (!item) {
       return {
         narrative: "Такой вещи нет в инвентаре.",
@@ -1718,6 +1749,11 @@ class Game {
       };
     }
     const slot = this.getEquipmentSlot(item);
+    const previous = this.character.equipment[slot];
+    if (previous) {
+      this.character.inventory.add(previous);
+    }
+    this.character.inventory.items.splice(itemIndex, 1);
     this.character.equipItem(slot, item);
     return {
       narrative: `Вы надеваете «${item.name}».`,
@@ -1740,6 +1776,7 @@ class Game {
       };
     }
     const itemName = this.character.equipment[slot].name;
+    this.character.inventory.add(this.character.equipment[slot]);
     this.character.unequipItem(slot);
     return {
       narrative: `Вы снимаете «${itemName}».`,
@@ -1922,6 +1959,7 @@ class Game {
         this.character.property.devices = [];
       }
       this.character.property.devices.push(item.name);
+      this.character.inventory.remove(item.id);
     }
 
     this.character.applyChange({ money: -price, morale: 2 });
@@ -2036,7 +2074,7 @@ class Game {
   getContextualActions() {
     if (this.pendingMenu?.options) {
       return this.pendingMenu.options.map((option, index) => ({
-        label: option,
+        label: `${index + 1}. ${option}`,
         value: String(index + 1)
       }));
     }
@@ -2165,6 +2203,7 @@ class Game {
 
   renderStatus() {
     const statsTable = {
+      title: "Статы",
       headers: ["Стат", "Значение"],
       rows: [
         ["Сила", this.character.stats.strength],
@@ -2176,6 +2215,7 @@ class Game {
     };
 
     const healthTable = {
+      title: "Состояние",
       headers: ["Показатель", "Значение"],
       rows: [
         ["HP", this.character.health.hp],
@@ -2196,13 +2236,15 @@ class Game {
     };
 
     const inventoryTable = {
-      headers: ["Инвентарь", "Вес"],
+      title: "Инвентарь",
+      headers: ["Предмет", "Вес"],
       rows: this.character.inventory.items.length
         ? this.character.inventory.items.map((item) => [item.name, item.weight])
         : [["Пусто", "0"]]
     };
 
     const propertyTable = {
+      title: "Имущество",
       headers: ["Имущество", "Описание"],
       rows: [
         ["Адрес", this.character.property.address],
@@ -2238,12 +2280,14 @@ class Game {
           ];
 
     const appearanceTable = {
-      headers: ["Внешность", "Значение"],
+      title: "Внешность",
+      headers: ["Параметр", "Значение"],
       rows: appearanceRows
     };
 
     const equipmentTable = {
-      headers: ["Одежда", "Надето"],
+      title: "Экипировка",
+      headers: ["Слот", "Надето"],
       rows: Object.entries(this.character.equipment).map(([slot, item]) => [
         slot,
         item ? item.name : "нет"
