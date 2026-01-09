@@ -1572,32 +1572,34 @@ class Game {
   }
 
   handleMenuSelection(value) {
-    if (!this.pendingMenu) {
+    const menu = this.pendingMenu;
+    if (!menu) {
       return;
     }
     let result = null;
-    if (this.pendingMenu.type === "phone") {
+    const menuType = menu.type;
+    if (menuType === "phone") {
       result = this.handlePhoneMenuSelection(value);
     }
-    if (["shop", "lingerie", "foodshop", "cafe", "tech"].includes(this.pendingMenu.type)) {
+    if (["shop", "lingerie", "foodshop", "cafe", "tech"].includes(menuType)) {
       result = this.handleShopMenuSelection(value);
     }
-    if (this.pendingMenu.type === "npc") {
-      result = this.handleNpcMenuSelection(value, this.pendingMenu.actionType || "talk");
+    if (menuType === "npc") {
+      result = this.handleNpcMenuSelection(value, menu.actionType || "talk");
     }
-    if (this.pendingMenu.type === "wardrobe") {
+    if (menuType === "wardrobe") {
       result = this.handleWardrobeMenuSelection(value);
     }
-    if (this.pendingMenu.type === "eat") {
+    if (menuType === "eat") {
       result = this.handleEatMenuSelection(value);
     }
-    if (this.pendingMenu.type === "hair") {
+    if (menuType === "hair") {
       result = this.handleHairMenuSelection(value);
     }
-    if (this.pendingMenu.type === "phone-contacts") {
+    if (menuType === "phone-contacts") {
       result = this.handlePhoneContactsSelection(value);
     }
-    if (this.pendingMenu.type === "phone-add") {
+    if (menuType === "phone-add") {
       result = this.handlePhoneAddContactSelection(value);
     }
 
