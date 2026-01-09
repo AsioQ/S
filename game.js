@@ -1572,6 +1572,9 @@ class Game {
   }
 
   handleMenuSelection(value) {
+    if (!this.pendingMenu) {
+      return;
+    }
     let result = null;
     if (this.pendingMenu.type === "phone") {
       result = this.handlePhoneMenuSelection(value);
