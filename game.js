@@ -439,6 +439,8 @@ class Game {
     this.mapElement = document.getElementById("map");
     this.availableActionsElement = document.getElementById("available-actions");
     this.actionButtonsElement = document.getElementById("action-buttons");
+    this.playerTabsElement = document.getElementById("player-tabs");
+    this.playerContentElement = document.getElementById("player-content");
     this.input = document.getElementById("player-input");
     this.sendAction = document.getElementById("send-action");
     this.newGame = document.getElementById("new-game");
@@ -468,6 +470,7 @@ class Game {
     this.creationQueue = [];
     this.currentQuestion = 0;
     this.profileDraft = {};
+    this.activePlayerTab = "status";
 
     this.bindEvents();
     this.bootstrap();
@@ -496,6 +499,16 @@ class Game {
         }
         this.lastAction = value;
         this.runTurn(value);
+      });
+    }
+    if (this.playerTabsElement) {
+      this.playerTabsElement.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-tab]");
+        if (!button) return;
+        const tab = button.dataset.tab;
+        if (!tab) return;
+        this.activePlayerTab = tab;
+        this.renderPlayerPanel();
       });
     }
   }
@@ -2207,102 +2220,132 @@ class Game {
   }
 
   renderStatus() {
-    const statsTable = {
-      title: "Статы",
-      headers: ["Стат", "Значение"],
-      rows: [
-        ["Сила", this.character.stats.strength],
-        ["Ловкость", this.character.stats.agility],
-        ["Гибкость", this.character.stats.flexibility],
-        ["Харизма", this.character.stats.charisma],
-        ["Интеллект", this.character.stats.intellect]
-      ]
-    };
+    this.renderPlayerPanel();
+  }
 
-    const healthTable = {
-      title: "Состояние",
-      headers: ["Показатель", "Значение"],
-      rows: [
-        ["HP", this.character.health.hp],
-        ["Энергия", this.character.energy],
-        ["Мораль", this.character.morale],
-        ["Голод", this.character.hunger],
-        ["Досуг", this.character.leisure],
-        ["Деньги", `${this.character.money}`],
-        ["Работа", this.character.job],
-        ["Привлекательность", this.character.attractiveness],
-        ["Популярность", this.character.popularity],
-        ...(this.character.gender === "женский" ? [["Сексуальность", this.character.sexuality]] : []),
-        ["День", this.world.time.day],
-        ["Час", `${this.world.time.hour}:00`],
-        ["Локация", `${this.world.activeDistrict}, ${this.world.activePlace}`],
-        ["Статус", this.character.isNaked() ? (this.character.gender === "женский" ? "голая" : "голый") : "одет(а)"]
-      ]
-    };
-
-    const inventoryTable = {
-      title: "Инвентарь",
-      headers: ["Предмет", "Вес"],
-      rows: this.character.inventory.items.length
-        ? this.character.inventory.items.map((item) => [item.name, item.weight])
-        : [["Пусто", "0"]]
-    };
-
-    const propertyTable = {
-      title: "Имущество",
-      headers: ["Имущество", "Описание"],
-      rows: [
-        ["Адрес", this.character.property.address],
-        ["Размер", this.character.property.size],
-        ["Мебель", this.character.property.furniture.length ? this.character.property.furniture.join(", ") : "Пусто"],
-        ["Техника", this.character.property.devices?.length ? this.character.property.devices.join(", ") : "Пусто"]
-      ]
-    };
-
-    const appearanceRows =
-      this.character.gender === "мужской"
-        ? [
-            ["Рост", this.character.appearance.height],
-            ["Вес", this.character.appearance.weight],
-            ["Плечи", this.character.appearance.shoulders],
-            ["Талия", this.character.appearance.waist],
-            ["Лицо", this.character.appearance.face],
-            ["Размер", this.character.appearance.phallus],
-            ["Прическа", `${this.character.appearance.hairStyle || "не задана"}`],
-            ["Цвет волос", `${this.character.appearance.hairColor || "не задан"}`]
-          ]
-        : [
-            ["Рост", this.character.appearance.height],
-            ["Вес", this.character.appearance.weight],
-            ["Бедра", this.character.appearance.hips],
-            ["Талия", this.character.appearance.waist],
-            ["Грудь", this.character.appearance.chest],
-            ["Ягодицы", this.character.appearance.glutes],
-            ["Лицо", this.character.appearance.face],
-            ["Прическа", `${this.character.appearance.hairStyle || "не задана"}`],
-            ["Цвет волос", `${this.character.appearance.hairColor || "не задан"}`],
-            ["Месячные", this.character.menstruation ?? "нет"]
-          ];
-
-    const appearanceTable = {
-      title: "Внешность",
-      headers: ["Параметр", "Значение"],
-      rows: appearanceRows
-    };
-
-    const equipmentTable = {
-      title: "Экипировка",
-      headers: ["Слот", "Надето"],
-      rows: Object.entries(this.character.equipment).map(([slot, item]) => [
-        slot,
-        item ? item.name : "нет"
-      ])
-    };
-
-    this.renderer.renderEntry({
-      system: "Статус обновлен.",
-      tables: [statsTable, healthTable, appearanceTable, equipmentTable, inventoryTable, propertyTable]
+  renderPlayerPanel() {
+    if (!this.playerContentElement) return;
+    const tabs = this.playerTabsElement?.querySelectorAll("button[data-tab]") || [];
+    tabs.forEach((button) => {
+      button.classList.toggle("active", button.dataset.tab === this.activePlayerTab);
     });
+
+    this.playerContentElement.innerHTML = "";
+    const content = document.createElement("div");
+    content.className = "player-sections";
+
+    if (this.activePlayerTab === "status") {
+      content.appendChild(
+        this.buildTable("Основное", [
+          ["HP", this.character.health.hp],
+          ["Энергия", this.character.energy],
+          ["Голод", this.character.hunger],
+          ["Мораль", this.character.morale],
+          ["Досуг", this.character.leisure],
+          ["Деньги", this.character.money],
+          ["Локация", `${this.world.activeDistrict}, ${this.world.activePlace}`]
+        ])
+      );
+      content.appendChild(
+        this.buildTable("Социальное", [
+          ["Работа", this.character.job],
+          ["Привлекательность", this.character.attractiveness],
+          ["Популярность", this.character.popularity],
+          ...(this.character.gender === "женский" ? [["Сексуальность", this.character.sexuality]] : []),
+          ["Статус", this.character.isNaked() ? (this.character.gender === "женский" ? "голая" : "голый") : "одет(а)"]
+        ])
+      );
+    }
+
+    if (this.activePlayerTab === "appearance") {
+      const appearanceRows =
+        this.character.gender === "мужской"
+          ? [
+              ["Рост", this.character.appearance.height],
+              ["Вес", this.character.appearance.weight],
+              ["Плечи", this.character.appearance.shoulders],
+              ["Талия", this.character.appearance.waist],
+              ["Лицо", this.character.appearance.face],
+              ["Размер", this.character.appearance.phallus]
+            ]
+          : [
+              ["Рост", this.character.appearance.height],
+              ["Вес", this.character.appearance.weight],
+              ["Бедра", this.character.appearance.hips],
+              ["Талия", this.character.appearance.waist],
+              ["Грудь", this.character.appearance.chest],
+              ["Ягодицы", this.character.appearance.glutes],
+              ["Лицо", this.character.appearance.face],
+              ["Месячные", this.character.menstruation ?? "нет"]
+            ];
+      content.appendChild(
+        this.buildTable("Параметры", [
+          ...appearanceRows,
+          ["Прическа", this.character.appearance.hairStyle || "не задана"],
+          ["Цвет волос", this.character.appearance.hairColor || "не задан"]
+        ])
+      );
+      content.appendChild(
+        this.buildTable(
+          "Экипировка",
+          Object.entries(this.character.equipment).map(([slot, item]) => [slot, item ? item.name : "нет"])
+        )
+      );
+    }
+
+    if (this.activePlayerTab === "inventory") {
+      const inventoryRows = this.character.inventory.items.length
+        ? this.character.inventory.items.map((item) => [item.name, item.weight])
+        : [["Пусто", "0"]];
+      content.appendChild(this.buildTable("Инвентарь", inventoryRows));
+    }
+
+    if (this.activePlayerTab === "property") {
+      content.appendChild(
+        this.buildTable("Дом", [
+          ["Адрес", this.character.property.address],
+          ["Размер", this.character.property.size],
+          ["Мебель", this.character.property.furniture.length ? this.character.property.furniture.join(", ") : "Пусто"],
+          ["Техника", this.character.property.devices?.length ? this.character.property.devices.join(", ") : "Пусто"]
+        ])
+      );
+      if (this.character.photos.length) {
+        const photoRows = this.character.photos.slice(-3).map((photo) => [
+          photo.time,
+          `${photo.description} (${photo.rating})`
+        ]);
+        content.appendChild(this.buildTable("Фото", photoRows));
+      }
+    }
+
+    this.playerContentElement.appendChild(content);
+  }
+
+  buildTable(title, rows) {
+    const wrapper = document.createElement("details");
+    wrapper.className = "table-wrapper";
+    wrapper.open = true;
+
+    const summary = document.createElement("summary");
+    summary.textContent = title;
+    wrapper.appendChild(summary);
+
+    const table = document.createElement("table");
+    table.className = "markdown-table";
+    const tbody = document.createElement("tbody");
+    rows.forEach((row) => {
+      const tr = document.createElement("tr");
+      row.forEach((cell) => {
+        const td = document.createElement("td");
+        td.textContent = cell;
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrapper.appendChild(table);
+
+    return wrapper;
   }
 
   spawnNpcs(limit) {

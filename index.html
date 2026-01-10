@@ -9,7 +9,7 @@
 <body>
   <div class="app">
     <header>
-      <h1>Seaside Kairo v0.36</h1>
+      <h1>Seaside Kairo v0.38</h1>
       <p class="subtitle">Текстовый RPG-симулятор жизни — прибрежный город Японии</p>
     </header>
 
@@ -21,8 +21,22 @@
     </section>
 
     <section class="output" aria-live="polite">
-      <div class="panels">
-        <div id="log"></div>
+      <div class="layout">
+        <aside class="player-panel">
+          <h2>Персонаж</h2>
+          <div class="tab-buttons" id="player-tabs">
+            <button data-tab="status" class="active">Состояние</button>
+            <button data-tab="appearance">Внешность</button>
+            <button data-tab="inventory">Инвентарь</button>
+            <button data-tab="property">Имущество</button>
+          </div>
+          <div id="player-content"></div>
+        </aside>
+
+        <div class="log-panel">
+          <div id="log"></div>
+        </div>
+
         <aside class="sidebar">
           <div class="panel">
             <h2>Карта</h2>
