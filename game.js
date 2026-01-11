@@ -441,8 +441,14 @@ class Game {
     this.mapElement = document.getElementById("map");
     this.availableActionsElement = document.getElementById("available-actions");
     this.actionButtonsElement = document.getElementById("action-buttons");
+    this.travelButtonsElement = document.getElementById("travel-buttons");
     this.playerTabsElement = document.getElementById("player-tabs");
     this.playerContentElement = document.getElementById("player-content");
+    this.creationControlsElement = document.getElementById("creation-controls");
+    this.creationEditorElement = document.getElementById("creation-editor");
+    this.startScreen = document.getElementById("start-screen");
+    this.startNewButton = document.getElementById("start-new");
+    this.startLoadButton = document.getElementById("start-load");
     this.input = document.getElementById("player-input");
     this.sendAction = document.getElementById("send-action");
     this.newGame = document.getElementById("new-game");
@@ -475,7 +481,7 @@ class Game {
     this.creationQueue = [];
     this.currentQuestion = 0;
     this.profileDraft = {};
-    this.activePlayerTab = "status";
+    this.activePlayerTab = "mirror";
 
     this.bindEvents();
     this.bootstrap();
@@ -492,6 +498,12 @@ class Game {
     });
     this.saveGame.addEventListener("click", () => this.save());
     this.loadGame.addEventListener("click", () => this.load());
+    if (this.startNewButton) {
+      this.startNewButton.addEventListener("click", () => this.startCreation());
+    }
+    if (this.startLoadButton) {
+      this.startLoadButton.addEventListener("click", () => this.load());
+    }
     if (this.actionButtonsElement) {
       this.actionButtonsElement.addEventListener("click", (event) => {
         const button = event.target.closest("button[data-action]");
@@ -521,6 +533,7 @@ class Game {
   async bootstrap() {
     await this.loadData();
     this.initializeCharacterLayers();
+    this.showStartScreen(true);
     this.renderer.renderEntry({
       narrative: "Прибрежный город встречает вас солью в воздухе, фонариками и мягким шумом прибоя.",
       system: "Нажмите «Создать персонажа», чтобы начать путешествие."
@@ -548,6 +561,7 @@ class Game {
   startCreation() {
     this.reset();
     this.state = "creating";
+    this.setInGameLayout(false);
     this.profileDraft = {
       stats: { strength: 5, agility: 5, flexibility: 5, charisma: 5, intellect: 5 },
       skills: { dance: 1, persuasion: 1, streetwise: 1, combat: 1 },
@@ -584,6 +598,7 @@ class Game {
     ];
     this.currentQuestion = 0;
     this.enableInput(true);
+    this.showStartScreen(false);
     this.askNextQuestion();
   }
 
@@ -592,10 +607,7 @@ class Game {
     if (!question) return;
     this.reset();
     const prompt = this.getQuestionPrompt(question);
-    if (question.key === "editor") {
-      this.activePlayerTab = "editor";
-      this.renderPlayerPanel();
-    }
+    this.renderCreationControls(question);
     this.renderer.renderEntry({
       dialogue: `Создание персонажа: ${prompt}`,
       system: "Введите ответ в поле ниже."
@@ -696,7 +708,7 @@ class Game {
       case "editor":
         if (!value.toLowerCase().startsWith("готов")) {
           this.renderer.renderEntry({
-            system: "Настройте внешний вид в редакторе слева и напишите «готово»."
+            system: "Настройте внешний вид в редакторе в центре и напишите «готово»."
           });
           return;
         }
@@ -750,13 +762,7 @@ class Game {
     if (hasAppearance) return;
     const insertIndex = this.creationQueue.findIndex((question) => question.key === "confirm");
     const appearanceQuestion = { key: "appearance", prompt: "" };
-    const questions = [
-      appearanceQuestion,
-      { key: "editor", prompt: "Настройте внешний вид в редакторе слева и напишите «готово»." }
-    ];
-    if (this.profileDraft.gender === "женский") {
-      questions.push({ key: "menstruation", prompt: "Месячные сейчас? (да/нет)" });
-    }
+    const questions = [{ key: "editor", prompt: "Настройте внешний вид в редакторе в центре и напишите «готово»." }, appearanceQuestion];
     if (insertIndex === -1) {
       this.creationQueue.push(...questions);
     } else {
@@ -771,11 +777,8 @@ class Game {
       }
       return "Внешность: рост, вес, бедра, талия, грудь, ягодицы, лицо (1-10). Пример: рост 170, вес 65, бедра 6, талия 5, грудь 5, ягодицы 6, лицо 7.";
     }
-    if (question.key === "menstruation") {
-      return "Месячные сейчас? (да/нет)";
-    }
     if (question.key === "editor") {
-      return "Настройте внешний вид в редакторе слева и напишите «готово».";
+      return "Настройте внешний вид в редакторе в центре и напишите «готово».";
     }
     return question.prompt;
   }
@@ -892,10 +895,13 @@ class Game {
 
     this.state = "playing";
     this.pendingMenu = null;
-    this.activePlayerTab = "status";
+    this.activePlayerTab = "mirror";
     this.enableInput(true);
     this.nextTurn.disabled = false;
     this.saveGame.disabled = false;
+    this.setInGameLayout(true);
+    this.showStartScreen(false);
+    this.hideCreationPanels();
 
     this.reset();
     this.renderer.renderEntry({
@@ -908,6 +914,7 @@ class Game {
     this.moveNpcs();
     this.renderNpcList();
     this.renderActionButtons();
+    this.renderTravelButtons();
   }
 
   runTurn(forcedAction = "") {
@@ -2265,105 +2272,27 @@ class Game {
     this.playerContentElement.innerHTML = "";
     const content = document.createElement("div");
     content.className = "player-sections";
-    if ((!this.character || !this.world) && this.activePlayerTab !== "editor") {
+    if (this.activePlayerTab === "mirror") {
+      const preview = this.buildLayerPreview();
+      if (preview) {
+        content.appendChild(preview);
+      }
+      if (this.character) {
+        const name = document.createElement("p");
+        name.className = "editor-empty";
+        name.textContent = `${this.character.name}, ${this.character.age}`;
+        content.appendChild(name);
+      }
+      this.playerContentElement.appendChild(content);
+      return;
+    }
+    if (!this.character || !this.world) {
       const empty = document.createElement("p");
       empty.className = "editor-empty";
       empty.textContent = "Создайте персонажа, чтобы увидеть данные.";
       content.appendChild(empty);
       this.playerContentElement.appendChild(content);
       return;
-    }
-
-    if (this.activePlayerTab === "status") {
-      const preview = this.buildLayerPreview();
-      if (preview) {
-        content.appendChild(preview);
-      }
-      content.appendChild(
-        this.buildTable("Основное", [
-          ["HP", this.character.health.hp],
-          ["Энергия", this.character.energy],
-          ["Голод", this.character.hunger],
-          ["Мораль", this.character.morale],
-          ["Досуг", this.character.leisure],
-          ["Деньги", this.character.money],
-          ["Локация", `${this.world.activeDistrict}, ${this.world.activePlace}`]
-        ])
-      );
-      content.appendChild(
-        this.buildTable("Социальное", [
-          ["Работа", this.character.job],
-          ["Привлекательность", this.character.attractiveness],
-          ["Популярность", this.character.popularity],
-          ...(this.character.gender === "женский" ? [["Сексуальность", this.character.sexuality]] : []),
-          ["Статус", this.character.isNaked() ? (this.character.gender === "женский" ? "голая" : "голый") : "одет(а)"]
-        ])
-      );
-    }
-
-    if (this.activePlayerTab === "appearance") {
-      const appearanceRows =
-        this.character.gender === "мужской"
-          ? [
-              ["Рост", this.character.appearance.height],
-              ["Вес", this.character.appearance.weight],
-              ["Плечи", this.character.appearance.shoulders],
-              ["Талия", this.character.appearance.waist],
-              ["Лицо", this.character.appearance.face],
-              ["Размер", this.character.appearance.phallus]
-            ]
-          : [
-              ["Рост", this.character.appearance.height],
-              ["Вес", this.character.appearance.weight],
-              ["Бедра", this.character.appearance.hips],
-              ["Талия", this.character.appearance.waist],
-              ["Грудь", this.character.appearance.chest],
-              ["Ягодицы", this.character.appearance.glutes],
-              ["Лицо", this.character.appearance.face],
-              ["Месячные", this.character.menstruation ?? "нет"]
-            ];
-      content.appendChild(
-        this.buildTable("Параметры", [
-          ...appearanceRows,
-          ["Прическа", this.character.appearance.hairStyle || "не задана"],
-          ["Цвет волос", this.character.appearance.hairColor || "не задан"]
-        ])
-      );
-      content.appendChild(
-        this.buildTable(
-          "Экипировка",
-          Object.entries(this.character.equipment).map(([slot, item]) => [slot, item ? item.name : "нет"])
-        )
-      );
-    }
-
-    if (this.activePlayerTab === "inventory") {
-      const inventoryRows = this.character.inventory.items.length
-        ? this.character.inventory.items.map((item) => [item.name, item.weight])
-        : [["Пусто", "0"]];
-      content.appendChild(this.buildTable("Инвентарь", inventoryRows));
-    }
-
-    if (this.activePlayerTab === "property") {
-      content.appendChild(
-        this.buildTable("Дом", [
-          ["Адрес", this.character.property.address],
-          ["Размер", this.character.property.size],
-          ["Мебель", this.character.property.furniture.length ? this.character.property.furniture.join(", ") : "Пусто"],
-          ["Техника", this.character.property.devices?.length ? this.character.property.devices.join(", ") : "Пусто"]
-        ])
-      );
-      if (this.character.photos.length) {
-        const photoRows = this.character.photos.slice(-3).map((photo) => [
-          photo.time,
-          `${photo.description} (${photo.rating})`
-        ]);
-        content.appendChild(this.buildTable("Фото", photoRows));
-      }
-    }
-
-    if (this.activePlayerTab === "editor") {
-      content.appendChild(this.renderEditorPanel());
     }
 
     this.playerContentElement.appendChild(content);
@@ -2555,6 +2484,129 @@ class Game {
     return stack;
   }
 
+  renderCreationControls(question) {
+    if (!this.creationControlsElement) return;
+    this.creationControlsElement.innerHTML = "";
+    this.creationControlsElement.hidden = this.state !== "creating";
+    if (this.state !== "creating") return;
+
+    const heading = document.createElement("h3");
+    heading.textContent = "Шаг создания персонажа";
+    this.creationControlsElement.appendChild(heading);
+
+    const prompt = document.createElement("p");
+    prompt.textContent = this.getQuestionPrompt(question);
+    this.creationControlsElement.appendChild(prompt);
+
+    const actions = document.createElement("div");
+    actions.className = "creation-actions";
+    this.creationControlsElement.appendChild(actions);
+
+    const addChoiceButton = (label, value) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = label;
+      button.addEventListener("click", () => this.handleCreationInput(value));
+      actions.appendChild(button);
+    };
+
+    if (question.key === "gender") {
+      CREATION_OPTIONS.genders.forEach((gender) => addChoiceButton(gender, gender));
+    } else if (question.key === "job") {
+      CREATION_OPTIONS.jobs.forEach((job) => addChoiceButton(job, job));
+    } else if (question.key === "background") {
+      CREATION_OPTIONS.backgrounds.forEach((background) => addChoiceButton(background, background));
+    } else if (question.key === "traits") {
+      const selection = new Set(this.profileDraft.traits || []);
+      CREATION_OPTIONS.traits.forEach((trait) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = trait;
+        button.classList.toggle("active", selection.has(trait));
+        button.addEventListener("click", () => {
+          if (selection.has(trait)) {
+            selection.delete(trait);
+          } else if (selection.size < 2) {
+            selection.add(trait);
+          }
+          button.classList.toggle("active", selection.has(trait));
+        });
+        actions.appendChild(button);
+      });
+      const confirm = document.createElement("button");
+      confirm.type = "button";
+      confirm.textContent = "Подтвердить выбор";
+      confirm.addEventListener("click", () => this.handleCreationInput(Array.from(selection).join(", ")));
+      actions.appendChild(confirm);
+    } else if (question.key === "confirm") {
+      addChoiceButton("Да", "да");
+      addChoiceButton("Нет", "нет");
+    } else if (question.key === "editor") {
+      addChoiceButton("Готово", "готово");
+    } else {
+      const inputRow = document.createElement("div");
+      inputRow.className = "creation-input";
+      const input = document.createElement("input");
+      input.type = question.key === "age" ? "number" : "text";
+      input.placeholder = "Введите значение...";
+      const submit = document.createElement("button");
+      submit.type = "button";
+      submit.textContent = "Далее";
+      submit.addEventListener("click", () => this.handleCreationInput(input.value));
+      inputRow.appendChild(input);
+      inputRow.appendChild(submit);
+      this.creationControlsElement.appendChild(inputRow);
+    }
+
+    if (this.creationEditorElement) {
+      if (question.key === "editor") {
+        this.creationEditorElement.hidden = false;
+        this.creationEditorElement.innerHTML = "";
+        this.creationEditorElement.appendChild(this.renderEditorPanel());
+      } else {
+        this.creationEditorElement.hidden = true;
+        this.creationEditorElement.innerHTML = "";
+      }
+    }
+  }
+
+  hideCreationPanels() {
+    if (this.creationControlsElement) {
+      this.creationControlsElement.hidden = true;
+      this.creationControlsElement.innerHTML = "";
+    }
+    if (this.creationEditorElement) {
+      this.creationEditorElement.hidden = true;
+      this.creationEditorElement.innerHTML = "";
+    }
+  }
+
+  setInGameLayout(active) {
+    document.body.classList.toggle("in-game", active);
+  }
+
+  showStartScreen(show) {
+    if (this.startScreen) {
+      this.startScreen.hidden = !show;
+    }
+  }
+
+  renderTravelButtons() {
+    if (!this.travelButtonsElement) return;
+    this.travelButtonsElement.innerHTML = "";
+    Object.entries(CITY_MAP).forEach(([district, places]) => {
+      places.forEach((place) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = `${place} (${district})`;
+        button.addEventListener("click", () => {
+          this.runTurn(place);
+        });
+        this.travelButtonsElement.appendChild(button);
+      });
+    });
+  }
+
   buildTable(title, rows) {
     const wrapper = document.createElement("details");
     wrapper.className = "table-wrapper";
@@ -2721,10 +2773,13 @@ class Game {
     this.eventManager = new EventManager(this.data.events);
 
     this.state = "playing";
-    this.activePlayerTab = "status";
+    this.activePlayerTab = "mirror";
     this.enableInput(true);
     this.nextTurn.disabled = false;
     this.saveGame.disabled = false;
+    this.setInGameLayout(true);
+    this.showStartScreen(false);
+    this.hideCreationPanels();
 
     this.renderer.renderEntry({
       narrative: "Сохранение загружено. Город вновь оживает.",
@@ -2736,6 +2791,7 @@ class Game {
     this.moveNpcs();
     this.renderNpcList();
     this.renderActionButtons();
+    this.renderTravelButtons();
   }
 
   reset() {

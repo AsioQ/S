@@ -13,6 +13,11 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   margin: 0;
   font-family: "Nunito", "Segoe UI", sans-serif;
@@ -29,11 +34,18 @@ body {
   max-width: 1440px;
   margin: 0 auto;
   padding: 20px 16px 32px;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 header {
   text-align: center;
   margin-bottom: 24px;
+}
+
+body.in-game header {
+  display: none;
 }
 
 h1 {
@@ -96,6 +108,10 @@ button:disabled {
   box-shadow: 0 0 20px rgba(125, 211, 255, 0.15);
 }
 
+body.in-game .output {
+  height: calc(100vh - 180px);
+}
+
 .layout {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr) 320px;
@@ -116,7 +132,6 @@ button:disabled {
   background-repeat: no-repeat;
   background-position: bottom right;
   background-size: 120px 120px;
-  overflow-y: auto;
 }
 
 .player-panel h2 {
@@ -147,7 +162,6 @@ button:disabled {
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 12px;
-  overflow-y: auto;
 }
 
 #log {
@@ -162,7 +176,6 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  overflow-y: auto;
 }
 
 .panel {
@@ -354,8 +367,8 @@ button:disabled {
 
 .preview-stack {
   position: relative;
-  width: 260px;
-  height: 340px;
+  width: 320px;
+  height: 420px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.05);
   display: flex;
@@ -424,4 +437,84 @@ button:disabled {
   margin: 0;
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.center-panel {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  height: 100%;
+}
+
+.creation-controls {
+  background: rgba(25, 12, 52, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.creation-controls h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--accent);
+}
+
+.creation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.creation-actions button.active {
+  border-color: var(--glow);
+  box-shadow: 0 0 8px rgba(125, 211, 255, 0.5);
+}
+
+.creation-input {
+  display: flex;
+  gap: 8px;
+}
+
+.creation-input input {
+  flex: 1;
+  background: #0b1223;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--text);
+}
+
+.creation-input input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.creation-editor {
+  background: rgba(12, 6, 32, 0.7);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.start-screen {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 6, 25, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.start-card {
+  background: rgba(27, 15, 61, 0.95);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  display: grid;
+  gap: 12px;
+  min-width: 280px;
 }

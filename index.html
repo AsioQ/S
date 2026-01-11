@@ -9,7 +9,7 @@
 <body>
   <div class="app">
     <header>
-      <h1>Seaside Kairo v0.38</h1>
+      <h1>Seaside Kairo v0.4</h1>
       <p class="subtitle">Текстовый RPG-симулятор жизни — прибрежный город Японии</p>
     </header>
 
@@ -25,17 +25,17 @@
         <aside class="player-panel">
           <h2>Персонаж</h2>
           <div class="tab-buttons" id="player-tabs">
-            <button data-tab="status" class="active">Состояние</button>
-            <button data-tab="appearance">Внешность</button>
-            <button data-tab="inventory">Инвентарь</button>
-            <button data-tab="property">Имущество</button>
-            <button data-tab="editor">Редактор</button>
+            <button data-tab="mirror" class="active">Зеркало</button>
           </div>
           <div id="player-content"></div>
         </aside>
 
         <div class="log-panel">
-          <div id="log"></div>
+          <div class="center-panel">
+            <div id="log"></div>
+            <div id="creation-controls" class="creation-controls" hidden></div>
+            <div id="creation-editor" class="creation-editor" hidden></div>
+          </div>
         </div>
 
         <aside class="sidebar">
@@ -51,6 +51,10 @@
             <h2>Быстрые кнопки</h2>
             <div id="action-buttons" class="action-buttons"></div>
           </div>
+          <div class="panel">
+            <h2>Быстрое перемещение</h2>
+            <div id="travel-buttons" class="action-buttons"></div>
+          </div>
         </aside>
       </div>
     </section>
@@ -63,6 +67,14 @@
       </div>
       <p class="hint">Подсказка: вы можете игнорировать меню и писать свободный текст.</p>
     </section>
+  </div>
+
+  <div class="start-screen" id="start-screen">
+    <div class="start-card">
+      <h2>Начать игру</h2>
+      <button id="start-new">Создать персонажа</button>
+      <button id="start-load">Загрузить игру</button>
+    </div>
   </div>
 
   <script src="game.js" type="module"></script>
