@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seaside Kairo: Text RPG</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Seaside Kairo v0.4</h1>
+      <p class="subtitle">Текстовый RPG-симулятор жизни — прибрежный город Японии</p>
+    </header>
+
+    <section class="controls">
+      <button id="new-game">Создать персонажа</button>
+      <button id="next-turn" disabled>Следующий ход</button>
+      <button id="save-game" disabled>Сохранить</button>
+      <button id="load-game">Загрузить</button>
+    </section>
+
+    <section class="output" aria-live="polite">
+      <div class="layout">
+        <aside class="player-panel">
+          <h2>Персонаж</h2>
+          <div class="tab-buttons" id="player-tabs">
+            <button data-tab="mirror" class="active">Зеркало</button>
+          </div>
+          <div id="player-content"></div>
+        </aside>
+
+        <div class="log-panel">
+          <div class="center-panel">
+            <div id="log"></div>
+            <div id="creation-controls" class="creation-controls" hidden></div>
+            <div id="creation-editor" class="creation-editor" hidden></div>
+          </div>
+        </div>
+
+        <aside class="sidebar">
+          <div class="panel">
+            <h2>Карта</h2>
+            <div id="map"></div>
+          </div>
+          <div class="panel">
+            <h2>Доступные действия</h2>
+            <ul id="available-actions"></ul>
+          </div>
+          <div class="panel">
+            <h2>Быстрые кнопки</h2>
+            <div id="action-buttons" class="action-buttons"></div>
+          </div>
+          <div class="panel">
+            <h2>Быстрое перемещение</h2>
+            <div id="travel-buttons" class="action-buttons"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="input">
+      <label for="player-input">Ваше действие</label>
+      <div class="input-row">
+        <input id="player-input" type="text" placeholder="Например: пойти на набережную" disabled />
+        <button id="send-action" disabled>Отправить</button>
+      </div>
+      <p class="hint">Подсказка: вы можете игнорировать меню и писать свободный текст.</p>
+    </section>
+  </div>
+
+  <div class="start-screen" id="start-screen">
+    <div class="start-card">
+      <h2>Начать игру</h2>
+      <button id="start-new">Создать персонажа</button>
+      <button id="start-load">Загрузить игру</button>
+    </div>
+  </div>
+
+  <script src="game.js" type="module"></script>
+</body>
+</html>
