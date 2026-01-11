@@ -2,7 +2,8 @@ const DATA_PATHS = {
   items: "data/items.json",
   phrases: "data/phrases.json",
   events: "data/events.json",
-  npcs: "data/npcs.json"
+  npcs: "data/npcs.json",
+  characterLayers: "data/character_layers.json"
 };
 
 const CREATION_OPTIONS = {
@@ -455,7 +456,8 @@ class Game {
       items: [],
       phrases: {},
       events: [],
-      npcs: []
+      npcs: [],
+      characterLayers: {}
     };
 
     this.state = "idle";
@@ -466,6 +468,8 @@ class Game {
     this.pendingMenu = null;
     this.activeNpcIds = [];
     this.activeDelivery = null;
+    this.characterLayers = null;
+    this.layerSelections = {};
 
     this.creationQueue = [];
     this.currentQuestion = 0;
@@ -515,6 +519,7 @@ class Game {
 
   async bootstrap() {
     await this.loadData();
+    this.initializeCharacterLayers();
     this.renderer.renderEntry({
       narrative: "Прибрежный город встречает вас солью в воздухе, фонариками и мягким шумом прибоя.",
       system: "Нажмите «Создать персонажа», чтобы начать путешествие."
@@ -530,7 +535,7 @@ class Game {
           const data = await response.json();
           return [key, data];
         } catch (error) {
-          return [key, key === "phrases" ? {} : []];
+          return [key, key === "phrases" || key === "characterLayers" ? {} : []];
         }
       })
     );
@@ -2233,6 +2238,14 @@ class Game {
     this.playerContentElement.innerHTML = "";
     const content = document.createElement("div");
     content.className = "player-sections";
+    if ((!this.character || !this.world) && this.activePlayerTab !== "editor") {
+      const empty = document.createElement("p");
+      empty.className = "editor-empty";
+      empty.textContent = "Создайте персонажа, чтобы увидеть данные.";
+      content.appendChild(empty);
+      this.playerContentElement.appendChild(content);
+      return;
+    }
 
     if (this.activePlayerTab === "status") {
       content.appendChild(
@@ -2318,7 +2331,135 @@ class Game {
       }
     }
 
+    if (this.activePlayerTab === "editor") {
+      content.appendChild(this.renderEditorPanel());
+    }
+
     this.playerContentElement.appendChild(content);
+  }
+
+  initializeCharacterLayers() {
+    if (!this.data.characterLayers?.categories?.length) return;
+    this.characterLayers = this.data.characterLayers;
+    this.layerSelections = {};
+    this.characterLayers.categories.forEach((category) => {
+      const defaults = category.layers.filter((layer) => layer.default).map((layer) => layer.id);
+      if (!defaults.length && category.required && category.layers.length) {
+        defaults.push(category.layers[0].id);
+      }
+      this.layerSelections[category.id] = new Set(defaults);
+    });
+  }
+
+  getActiveLayers() {
+    if (!this.characterLayers?.categories) return [];
+    const activeLayers = [];
+    this.characterLayers.categories.forEach((category) => {
+      const selected = this.layerSelections[category.id] || new Set();
+      category.layers.forEach((layer) => {
+        if (selected.has(layer.id)) {
+          activeLayers.push({ ...layer, categoryId: category.id });
+        }
+      });
+    });
+    return activeLayers;
+  }
+
+  toggleLayerSelection(categoryId, layerId, enabled) {
+    if (!this.layerSelections[categoryId]) {
+      this.layerSelections[categoryId] = new Set();
+    }
+    if (enabled) {
+      this.layerSelections[categoryId].add(layerId);
+    } else {
+      this.layerSelections[categoryId].delete(layerId);
+    }
+  }
+
+  renderEditorPanel() {
+    const wrapper = document.createElement("div");
+    wrapper.className = "character-editor";
+
+    if (!this.characterLayers?.categories?.length) {
+      const notice = document.createElement("p");
+      notice.className = "editor-empty";
+      notice.textContent = "Нет данных по слоям персонажа. Проверьте data/character_layers.json.";
+      wrapper.appendChild(notice);
+      return wrapper;
+    }
+
+    const preview = document.createElement("div");
+    preview.className = "character-preview";
+
+    const stack = document.createElement("div");
+    stack.className = "preview-stack";
+    const activeLayers = this.getActiveLayers();
+    if (!activeLayers.length) {
+      const empty = document.createElement("span");
+      empty.textContent = "Слои не выбраны.";
+      stack.appendChild(empty);
+    } else {
+      activeLayers.forEach((layer) => {
+        if (layer.asset) {
+          const img = document.createElement("img");
+          img.src = layer.asset;
+          img.alt = layer.label;
+          img.loading = "lazy";
+          img.addEventListener("error", () => {
+            img.remove();
+          });
+          stack.appendChild(img);
+        } else {
+          const placeholder = document.createElement("div");
+          placeholder.className = "layer-placeholder";
+          placeholder.textContent = layer.label;
+          stack.appendChild(placeholder);
+        }
+      });
+    }
+    preview.appendChild(stack);
+
+    const options = document.createElement("div");
+    options.className = "editor-options";
+
+    this.characterLayers.categories.forEach((category) => {
+      const fieldset = document.createElement("fieldset");
+      fieldset.className = "editor-group";
+
+      const legend = document.createElement("legend");
+      legend.textContent = category.label;
+      fieldset.appendChild(legend);
+
+      category.layers.forEach((layer) => {
+        const label = document.createElement("label");
+        label.className = "editor-option";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = this.layerSelections[category.id]?.has(layer.id) || false;
+        checkbox.disabled = Boolean(layer.locked);
+        checkbox.addEventListener("change", () => {
+          this.toggleLayerSelection(category.id, layer.id, checkbox.checked);
+          if (category.required && !this.layerSelections[category.id]?.size) {
+            checkbox.checked = true;
+            this.toggleLayerSelection(category.id, layer.id, true);
+          }
+          this.renderPlayerPanel();
+        });
+
+        const text = document.createElement("span");
+        text.textContent = layer.label;
+        label.appendChild(checkbox);
+        label.appendChild(text);
+        fieldset.appendChild(label);
+      });
+
+      options.appendChild(fieldset);
+    });
+
+    wrapper.appendChild(preview);
+    wrapper.appendChild(options);
+    return wrapper;
   }
 
   buildTable(title, rows) {

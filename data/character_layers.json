@@ -1,0 +1,87 @@
+{
+  "sourcePsd": "data/Exports/Anime Mature Woman Free.psd",
+  "categories": [
+    {
+      "id": "base",
+      "label": "Base",
+      "multi": true,
+      "required": true,
+      "layers": [
+        {
+          "id": "base",
+          "label": "Base",
+          "asset": "data/Exports/character/base.png",
+          "default": true,
+          "locked": true
+        }
+      ]
+    },
+    {
+      "id": "hair",
+      "label": "Прическа",
+      "multi": true,
+      "layers": [
+        { "id": "hair-dark-1", "label": "Dark", "asset": "data/Exports/character/hair/dark-1.png" },
+        { "id": "hair-silver-1", "label": "Silver", "asset": "data/Exports/character/hair/silver-1.png" },
+        { "id": "hair-blondie-1", "label": "Blondie", "asset": "data/Exports/character/hair/blondie-1.png" },
+        { "id": "hair-blond-1", "label": "Blond", "asset": "data/Exports/character/hair/blond-1.png" },
+        { "id": "hair-brown-1", "label": "Brown", "asset": "data/Exports/character/hair/brown-1.png" },
+        { "id": "hair-pink-1", "label": "Pink", "asset": "data/Exports/character/hair/pink-1.png" }
+      ]
+    },
+    {
+      "id": "emotion",
+      "label": "Эмоция",
+      "multi": true,
+      "layers": [
+        { "id": "emotion-sleepy2", "label": "Sleepy 2", "asset": "data/Exports/character/emotion/sleepy-2.png" },
+        { "id": "emotion-delighted2", "label": "Delighted 2", "asset": "data/Exports/character/emotion/delighted-2.png" },
+        { "id": "emotion-delighted", "label": "Delighted", "asset": "data/Exports/character/emotion/delighted.png" },
+        { "id": "emotion-smile", "label": "Smile", "asset": "data/Exports/character/emotion/smile.png" }
+      ]
+    },
+    {
+      "id": "nose",
+      "label": "Нос",
+      "multi": true,
+      "layers": [
+        { "id": "nose-layer17", "label": "Layer 17", "asset": "data/Exports/character/nose/layer-17.png" },
+        { "id": "nose-layer19", "label": "Layer 19", "asset": "data/Exports/character/nose/layer-19.png" }
+      ]
+    },
+    {
+      "id": "blush",
+      "label": "Румянец",
+      "multi": true,
+      "layers": [
+        { "id": "blush-1", "label": "1", "asset": "data/Exports/character/blush/1.png" },
+        { "id": "blush-2", "label": "2", "asset": "data/Exports/character/blush/2.png" }
+      ]
+    },
+    {
+      "id": "clothes",
+      "label": "Одежда",
+      "multi": true,
+      "layers": [
+        { "id": "clothes-casual-1", "label": "Casual 1", "asset": "data/Exports/character/clothes/casual-1.png" },
+        { "id": "clothes-casual-2", "label": "Casual 2", "asset": "data/Exports/character/clothes/casual-2.png" },
+        { "id": "clothes-shirt-1", "label": "Shirt 1", "asset": "data/Exports/character/clothes/shirt-1.png" },
+        { "id": "clothes-shirt-2", "label": "Shirt 2", "asset": "data/Exports/character/clothes/shirt-2.png" },
+        { "id": "clothes-office-lady", "label": "Office Lady", "asset": "data/Exports/character/clothes/office-lady.png" },
+        { "id": "clothes-towel", "label": "Towel", "asset": "data/Exports/character/clothes/towel.png" },
+        { "id": "clothes-swimsuit-2", "label": "Swimsuit 2", "asset": "data/Exports/character/clothes/swimsuit-2.png" }
+      ]
+    },
+    {
+      "id": "accessories",
+      "label": "Аксессуары",
+      "multi": true,
+      "layers": [
+        { "id": "acc-rose2", "label": "Rose 2", "asset": "data/Exports/character/accessories/rose-2.png" },
+        { "id": "acc-circle-glasses", "label": "Circle Glasses", "asset": "data/Exports/character/accessories/circle-glasses.png" },
+        { "id": "acc-black-glasses", "label": "Black Glasses", "asset": "data/Exports/character/accessories/black-glasses.png" },
+        { "id": "acc-red-glasses", "label": "Red Glasses", "asset": "data/Exports/character/accessories/red-glasses.png" }
+      ]
+    }
+  ]
+}
