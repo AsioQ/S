@@ -1,0 +1,168 @@
+{
+  "sourcePsd": "data/Exports/AnimeWoman.psd",
+  "categories": [
+    {
+      "id": "base",
+      "label": "Base",
+      "multi": true,
+      "required": true,
+      "layers": [
+        {
+          "id": "base",
+          "label": "Base",
+          "asset": "data/Exports/Character/Base.png",
+          "default": true,
+          "locked": true
+        }
+      ]
+    },
+    {
+      "id": "hair",
+      "label": "Прическа",
+      "multi": true,
+      "layers": [
+        { "id": "hair-blond-2", "label": "Blond 2", "asset": "data/Exports/Character/Blond 2.png" },
+        { "id": "hair-blond-3", "label": "Blond 3", "asset": "data/Exports/Character/Blond 3.png" },
+        { "id": "hair-blond", "label": "Blond", "asset": "data/Exports/Character/Blond.png" },
+        { "id": "hair-blondie-2", "label": "Blondie 2", "asset": "data/Exports/Character/Blondie 2.png" },
+        { "id": "hair-blondie-3", "label": "Blondie 3", "asset": "data/Exports/Character/Blondie 3.png" },
+        { "id": "hair-blondie-4", "label": "Blondie 4", "asset": "data/Exports/Character/Blondie 4.png" },
+        { "id": "hair-blondie-5", "label": "Blondie 5", "asset": "data/Exports/Character/Blondie 5.png" },
+        { "id": "hair-blondie-1", "label": "Blondie (1)", "asset": "data/Exports/Character/Blondie(1).png" },
+        { "id": "hair-blondie", "label": "blondie", "asset": "data/Exports/Character/blondie.png" },
+        { "id": "hair-blondie-2-1", "label": "blondie 2(1)", "asset": "data/Exports/Character/blondie 2(1).png" },
+        { "id": "hair-brown-2-1", "label": "Brown 2(1)", "asset": "data/Exports/Character/Brown 2(1).png" },
+        { "id": "hair-brown-2", "label": "brown 2", "asset": "data/Exports/Character/brown 2.png" },
+        { "id": "hair-brown-3-1", "label": "brown 3(1)", "asset": "data/Exports/Character/brown 3(1).png" },
+        { "id": "hair-brown-3", "label": "Brown 3", "asset": "data/Exports/Character/Brown 3.png" },
+        { "id": "hair-brown-4", "label": "Brown 4", "asset": "data/Exports/Character/Brown 4.png" },
+        { "id": "hair-brown-5", "label": "Brown 5", "asset": "data/Exports/Character/Brown 5.png" },
+        { "id": "hair-brown-6", "label": "Brown 6", "asset": "data/Exports/Character/Brown 6.png" },
+        { "id": "hair-brown-7", "label": "Brown 7", "asset": "data/Exports/Character/Brown 7.png" },
+        { "id": "hair-brown-1", "label": "Brown(1)", "asset": "data/Exports/Character/Brown(1).png" },
+        { "id": "hair-brown", "label": "brown", "asset": "data/Exports/Character/brown.png" },
+        { "id": "hair-dark-2-1", "label": "Dark 2(1)", "asset": "data/Exports/Character/Dark 2(1).png" },
+        { "id": "hair-dark-2", "label": "dark 2", "asset": "data/Exports/Character/dark 2.png" },
+        { "id": "hair-dark-3-1", "label": "dark 3(1)", "asset": "data/Exports/Character/dark 3(1).png" },
+        { "id": "hair-dark-3", "label": "Dark 3", "asset": "data/Exports/Character/Dark 3.png" },
+        { "id": "hair-dark-4", "label": "Dark 4", "asset": "data/Exports/Character/Dark 4.png" },
+        { "id": "hair-dark-5", "label": "Dark 5", "asset": "data/Exports/Character/Dark 5.png" },
+        { "id": "hair-dark-6", "label": "Dark 6", "asset": "data/Exports/Character/Dark 6.png" },
+        { "id": "hair-dark-7", "label": "Dark 7", "asset": "data/Exports/Character/Dark 7.png" },
+        { "id": "hair-dark-1", "label": "Dark(1)", "asset": "data/Exports/Character/Dark(1).png" },
+        { "id": "hair-dark", "label": "dark", "asset": "data/Exports/Character/dark.png" },
+        { "id": "hair-pink-2-1", "label": "Pink 2(1)", "asset": "data/Exports/Character/Pink 2(1).png" },
+        { "id": "hair-pink-2", "label": "pink 2", "asset": "data/Exports/Character/pink 2.png" },
+        { "id": "hair-pink-3-1", "label": "pink 3(1)", "asset": "data/Exports/Character/pink 3(1).png" },
+        { "id": "hair-pink-3", "label": "Pink 3", "asset": "data/Exports/Character/Pink 3.png" },
+        { "id": "hair-pink-4", "label": "Pink 4", "asset": "data/Exports/Character/Pink 4.png" },
+        { "id": "hair-pink-5", "label": "Pink 5", "asset": "data/Exports/Character/Pink 5.png" },
+        { "id": "hair-pink-6", "label": "Pink 6", "asset": "data/Exports/Character/Pink 6.png" },
+        { "id": "hair-pink-7", "label": "Pink 7", "asset": "data/Exports/Character/Pink 7.png" },
+        { "id": "hair-pink-1", "label": "Pink(1)", "asset": "data/Exports/Character/Pink(1).png" },
+        { "id": "hair-pink", "label": "pink", "asset": "data/Exports/Character/pink.png" },
+        { "id": "hair-silver-2-1", "label": "Silver 2(1)", "asset": "data/Exports/Character/Silver 2(1).png" },
+        { "id": "hair-silver-2", "label": "silver 2", "asset": "data/Exports/Character/silver 2.png" },
+        { "id": "hair-silver-3-1", "label": "silver 3(1)", "asset": "data/Exports/Character/silver 3(1).png" },
+        { "id": "hair-silver-3", "label": "Silver 3", "asset": "data/Exports/Character/Silver 3.png" },
+        { "id": "hair-silver-4", "label": "Silver 4", "asset": "data/Exports/Character/Silver 4.png" },
+        { "id": "hair-silver-5", "label": "Silver 5", "asset": "data/Exports/Character/Silver 5.png" },
+        { "id": "hair-silver-6", "label": "Silver 6", "asset": "data/Exports/Character/Silver 6.png" },
+        { "id": "hair-silver-7", "label": "Silver 7", "asset": "data/Exports/Character/Silver 7.png" },
+        { "id": "hair-silver-1", "label": "Silver(1)", "asset": "data/Exports/Character/Silver(1).png" },
+        { "id": "hair-silver", "label": "silver", "asset": "data/Exports/Character/silver.png" }
+      ]
+    },
+    {
+      "id": "emotion",
+      "label": "Эмоция",
+      "multi": true,
+      "layers": [
+        { "id": "emotion-sleepy", "label": "Sleepy", "asset": "data/Exports/Character/Sleepy.png" },
+        { "id": "emotion-sleepy-2", "label": "Sleepy 2", "asset": "data/Exports/Character/Sleepy 2.png" },
+        { "id": "emotion-smile", "label": "Smile", "asset": "data/Exports/Character/Smile.png" },
+        { "id": "emotion-smile-2", "label": "Smile 2", "asset": "data/Exports/Character/Smile 2.png" },
+        { "id": "emotion-smug", "label": "smug", "asset": "data/Exports/Character/smug.png" },
+        { "id": "emotion-smug-2", "label": "Smug 2", "asset": "data/Exports/Character/Smug 2.png" },
+        { "id": "emotion-normal", "label": "Normal", "asset": "data/Exports/Character/Normal.png" },
+        { "id": "emotion-sad", "label": "sad", "asset": "data/Exports/Character/sad.png" },
+        { "id": "emotion-shocked", "label": "shocked", "asset": "data/Exports/Character/shocked.png" },
+        { "id": "emotion-crying", "label": "Crying", "asset": "data/Exports/Character/Crying.png" },
+        { "id": "emotion-o", "label": "o", "asset": "data/Exports/Character/_o.png" },
+        { "id": "emotion-delighted", "label": "Delighted", "asset": "data/Exports/Character/Delighted.png" },
+        { "id": "emotion-delighted-2", "label": "Delighted 2", "asset": "data/Exports/Character/Delighted 2.png" },
+        { "id": "emotion-angry-1", "label": "Angry 1", "asset": "data/Exports/Character/Angry 1.png" },
+        { "id": "emotion-angry-2", "label": "Angry 2", "asset": "data/Exports/Character/Angry 2.png" },
+        { "id": "emotion-annoyed", "label": "Annoyed", "asset": "data/Exports/Character/Annoyed.png" }
+      ]
+    },
+    {
+      "id": "nose",
+      "label": "Нос",
+      "multi": true,
+      "layers": [
+        { "id": "nose-layer-17", "label": "Layer 17", "asset": "data/Exports/Character/Layer 17.png" },
+        { "id": "nose-layer-19", "label": "Layer 19", "asset": "data/Exports/Character/Layer 19.png" }
+      ]
+    },
+    {
+      "id": "blush",
+      "label": "Румянец",
+      "multi": true,
+      "layers": [
+        { "id": "blush-1", "label": "1", "asset": "data/Exports/Character/1.png" },
+        { "id": "blush-2", "label": "2", "asset": "data/Exports/Character/2.png" }
+      ]
+    },
+    {
+      "id": "clothes",
+      "label": "Одежда",
+      "multi": true,
+      "layers": [
+        { "id": "clothes-swimsuit-2", "label": "Swimsuit 2", "asset": "data/Exports/Character/Swimsuit 2.png" },
+        { "id": "clothes-towel", "label": "Towel", "asset": "data/Exports/Character/Towel.png" },
+        { "id": "clothes-summer-dress", "label": "Summer Dress", "asset": "data/Exports/Character/Summer Dress.png" },
+        { "id": "clothes-winter-1", "label": "Winter 1", "asset": "data/Exports/Character/Winter 1.png" },
+        { "id": "clothes-dress-1", "label": "Dress 1", "asset": "data/Exports/Character/Dress 1.png" },
+        { "id": "clothes-school-uniform-1", "label": "School Uniform 1", "asset": "data/Exports/Character/School Uniform 1.png" },
+        { "id": "clothes-school-uniform-2", "label": "School Uniform 2", "asset": "data/Exports/Character/School Uniform 2.png" },
+        { "id": "clothes-pe-uniform", "label": "PE uniform", "asset": "data/Exports/Character/PE uniform.png" },
+        { "id": "clothes-office-lady", "label": "Office Lady", "asset": "data/Exports/Character/Office Lady.png" },
+        { "id": "clothes-shirt-1", "label": "Shirt 1", "asset": "data/Exports/Character/Shirt 1.png" },
+        { "id": "clothes-shirt-2", "label": "Shirt 2", "asset": "data/Exports/Character/Shirt 2.png" },
+        { "id": "clothes-casual-1", "label": "Casual 1", "asset": "data/Exports/Character/Casual 1.png" },
+        { "id": "clothes-casual-1-2", "label": "Casual 1 2", "asset": "data/Exports/Character/Casual 1 2.png" },
+        { "id": "clothes-casual-2", "label": "Casual 2", "asset": "data/Exports/Character/Casual 2.png" },
+        { "id": "clothes-folder-6", "label": "Folder 6", "asset": "data/Exports/Character/Folder 6.png" },
+        { "id": "clothes-folder-8", "label": "Folder 8", "asset": "data/Exports/Character/Folder 8.png" },
+        { "id": "clothes-folder-17", "label": "Folder 17", "asset": "data/Exports/Character/Folder 17.png" },
+        { "id": "clothes-layer-60", "label": "Layer 60", "asset": "data/Exports/Character/Layer 60.png" },
+        { "id": "clothes-layer-84", "label": "Layer 84", "asset": "data/Exports/Character/Layer 84.png" },
+        { "id": "clothes-layer-84-copy", "label": "Layer 84 Copy", "asset": "data/Exports/Character/Layer 84 Copy.png" },
+        { "id": "clothes-nametag", "label": "Nametag", "asset": "data/Exports/Character/Nametag.png" },
+        { "id": "clothes-nametag-copy", "label": "Nametag Copy", "asset": "data/Exports/Character/Nametag Copy.png" }
+      ]
+    },
+    {
+      "id": "accessories",
+      "label": "Аксессуары",
+      "multi": true,
+      "layers": [
+        { "id": "acc-red-glasses", "label": "Red Glasses", "asset": "data/Exports/Character/Red Glasses.png" },
+        { "id": "acc-black-glasses", "label": "Black Glasses", "asset": "data/Exports/Character/Black Glasses.png" },
+        { "id": "acc-circle-glasses", "label": "Circle Glasses", "asset": "data/Exports/Character/Circle Glasses.png" },
+        { "id": "acc-ribbon", "label": "ribbon", "asset": "data/Exports/Character/ribbon.png" },
+        { "id": "acc-white-ribbon", "label": "White ribbon", "asset": "data/Exports/Character/White ribbon.png" },
+        { "id": "acc-yellow-ribbon", "label": "Yellow Ribbon", "asset": "data/Exports/Character/Yellow Ribbon.png" },
+        { "id": "acc-black-ribbon", "label": "Black ribbon", "asset": "data/Exports/Character/Black ribbon.png" },
+        { "id": "acc-flower", "label": "Flower", "asset": "data/Exports/Character/Flower.png" },
+        { "id": "acc-choker", "label": "Choker", "asset": "data/Exports/Character/Choker.png" },
+        { "id": "acc-rose", "label": "Rose", "asset": "data/Exports/Character/Rose.png" },
+        { "id": "acc-rose-2", "label": "Rose 2", "asset": "data/Exports/Character/Rose 2.png" },
+        { "id": "acc-band-1", "label": "Band 1", "asset": "data/Exports/Character/Band 1.png" },
+        { "id": "acc-band-2", "label": "Band 2", "asset": "data/Exports/Character/Band 2.png" },
+        { "id": "acc-band-3", "label": "Band3", "asset": "data/Exports/Character/Band3.png" }
+      ]
+    }
+  ]
+}
