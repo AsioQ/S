@@ -1,5 +1,5 @@
 {
-  "sourcePsd": "data/Exports/personal.psd",
+  "sourcePsd": "personal.psd",
   "categories": [
     {
       "id": "base",
