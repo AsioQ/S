@@ -21,6 +21,7 @@ body {
 body {
   margin: 0;
   font-family: "Nunito", "Segoe UI", sans-serif;
+  overflow: hidden;
   background:
     url("data/Exports/HomeScreen/HomeScreenBackground.jpg") no-repeat center/cover,
     url("data/Exports/waves.svg") repeat-x bottom center,
@@ -132,6 +133,7 @@ body.in-game .output {
   background-repeat: no-repeat;
   background-position: bottom right;
   background-size: 120px 120px;
+  overflow: hidden;
 }
 
 .player-panel h2 {
@@ -162,6 +164,7 @@ body.in-game .output {
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 12px;
+  overflow: hidden;
 }
 
 #log {
@@ -170,12 +173,14 @@ body.in-game .output {
   gap: 14px;
   min-height: 240px;
   font-size: 1.05rem;
+  overflow-y: auto;
 }
 
 .sidebar {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow: hidden;
 }
 
 .panel {
@@ -444,6 +449,7 @@ body.in-game .output {
   grid-template-rows: minmax(0, 1fr) auto auto;
   gap: 12px;
   height: 100%;
+  overflow: hidden;
 }
 
 .creation-controls {
@@ -506,6 +512,10 @@ body.in-game .output {
   align-items: center;
   justify-content: center;
   z-index: 10;
+}
+
+.start-screen[hidden] {
+  display: none;
 }
 
 .start-card {

@@ -502,7 +502,10 @@ class Game {
       this.startNewButton.addEventListener("click", () => this.startCreation());
     }
     if (this.startLoadButton) {
-      this.startLoadButton.addEventListener("click", () => this.load());
+      this.startLoadButton.addEventListener("click", () => {
+        this.showStartScreen(false);
+        this.load();
+      });
     }
     if (this.actionButtonsElement) {
       this.actionButtonsElement.addEventListener("click", (event) => {
@@ -2594,16 +2597,17 @@ class Game {
   renderTravelButtons() {
     if (!this.travelButtonsElement) return;
     this.travelButtonsElement.innerHTML = "";
-    Object.entries(CITY_MAP).forEach(([district, places]) => {
-      places.forEach((place) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.textContent = `${place} (${district})`;
-        button.addEventListener("click", () => {
-          this.runTurn(place);
-        });
-        this.travelButtonsElement.appendChild(button);
+    if (!this.world) return;
+    const district = this.world.activeDistrict;
+    const places = CITY_MAP[district] || [];
+    places.forEach((place) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = place;
+      button.addEventListener("click", () => {
+        this.runTurn(place);
       });
+      this.travelButtonsElement.appendChild(button);
     });
   }
 
@@ -2759,6 +2763,8 @@ class Game {
     const raw = localStorage.getItem("neon-boroughs-save");
     if (!raw) {
       this.renderer.renderEntry({ system: "Сохранение не найдено." });
+      this.showStartScreen(true);
+      this.setInGameLayout(false);
       return;
     }
     const payload = JSON.parse(raw);
