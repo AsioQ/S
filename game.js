@@ -449,12 +449,15 @@ class Game {
     this.startScreen = document.getElementById("start-screen");
     this.startNewButton = document.getElementById("start-new");
     this.startLoadButton = document.getElementById("start-load");
+    this.settingsModal = document.getElementById("settings-modal");
+    this.settingsOpenButton = document.getElementById("open-settings");
+    this.settingsCloseButton = document.getElementById("settings-close");
+    this.settingsNewButton = document.getElementById("settings-new");
+    this.settingsNextButton = document.getElementById("settings-next");
+    this.settingsSaveButton = document.getElementById("settings-save");
+    this.settingsLoadButton = document.getElementById("settings-load");
     this.input = document.getElementById("player-input");
     this.sendAction = document.getElementById("send-action");
-    this.newGame = document.getElementById("new-game");
-    this.nextTurn = document.getElementById("next-turn");
-    this.saveGame = document.getElementById("save-game");
-    this.loadGame = document.getElementById("load-game");
 
     this.renderer = new Renderer(this.logElement);
     this.parser = new Parser();
@@ -488,16 +491,36 @@ class Game {
   }
 
   bindEvents() {
-    this.newGame.addEventListener("click", () => this.startCreation());
-    this.nextTurn.addEventListener("click", () => this.runTurn());
     this.sendAction.addEventListener("click", () => this.handleInput());
     this.input.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
         this.handleInput();
       }
     });
-    this.saveGame.addEventListener("click", () => this.save());
-    this.loadGame.addEventListener("click", () => this.load());
+    if (this.settingsOpenButton) {
+      this.settingsOpenButton.addEventListener("click", () => this.toggleSettings(true));
+    }
+    if (this.settingsCloseButton) {
+      this.settingsCloseButton.addEventListener("click", () => this.toggleSettings(false));
+    }
+    if (this.settingsNewButton) {
+      this.settingsNewButton.addEventListener("click", () => {
+        this.toggleSettings(false);
+        this.startCreation();
+      });
+    }
+    if (this.settingsNextButton) {
+      this.settingsNextButton.addEventListener("click", () => this.runTurn());
+    }
+    if (this.settingsSaveButton) {
+      this.settingsSaveButton.addEventListener("click", () => this.save());
+    }
+    if (this.settingsLoadButton) {
+      this.settingsLoadButton.addEventListener("click", () => {
+        this.toggleSettings(false);
+        this.load();
+      });
+    }
     if (this.startNewButton) {
       this.startNewButton.addEventListener("click", () => this.startCreation());
     }
@@ -565,6 +588,7 @@ class Game {
     this.reset();
     this.state = "creating";
     this.setInGameLayout(false);
+    this.updateSettingsButtons();
     this.profileDraft = {
       stats: { strength: 5, agility: 5, flexibility: 5, charisma: 5, intellect: 5 },
       skills: { dance: 1, persuasion: 1, streetwise: 1, combat: 1 },
@@ -900,8 +924,7 @@ class Game {
     this.pendingMenu = null;
     this.activePlayerTab = "mirror";
     this.enableInput(true);
-    this.nextTurn.disabled = false;
-    this.saveGame.disabled = false;
+    this.updateSettingsButtons();
     this.setInGameLayout(true);
     this.showStartScreen(false);
     this.hideCreationPanels();
@@ -2298,6 +2321,90 @@ class Game {
       return;
     }
 
+    if (this.activePlayerTab === "status") {
+      content.appendChild(
+        this.buildTable("Основное", [
+          ["HP", this.character.health.hp],
+          ["Энергия", this.character.energy],
+          ["Голод", this.character.hunger],
+          ["Мораль", this.character.morale],
+          ["Досуг", this.character.leisure],
+          ["Деньги", this.character.money],
+          ["Локация", `${this.world.activeDistrict}, ${this.world.activePlace}`]
+        ])
+      );
+      content.appendChild(
+        this.buildTable("Социальное", [
+          ["Работа", this.character.job],
+          ["Привлекательность", this.character.attractiveness],
+          ["Популярность", this.character.popularity],
+          ...(this.character.gender === "женский" ? [["Сексуальность", this.character.sexuality]] : []),
+          ["Статус", this.character.isNaked() ? (this.character.gender === "женский" ? "голая" : "голый") : "одет(а)"]
+        ])
+      );
+    }
+
+    if (this.activePlayerTab === "appearance") {
+      const appearanceRows =
+        this.character.gender === "мужской"
+          ? [
+              ["Рост", this.character.appearance.height],
+              ["Вес", this.character.appearance.weight],
+              ["Плечи", this.character.appearance.shoulders],
+              ["Талия", this.character.appearance.waist],
+              ["Лицо", this.character.appearance.face],
+              ["Размер", this.character.appearance.phallus]
+            ]
+          : [
+              ["Рост", this.character.appearance.height],
+              ["Вес", this.character.appearance.weight],
+              ["Бедра", this.character.appearance.hips],
+              ["Талия", this.character.appearance.waist],
+              ["Грудь", this.character.appearance.chest],
+              ["Ягодицы", this.character.appearance.glutes],
+              ["Лицо", this.character.appearance.face],
+              ["Месячные", this.character.menstruation ?? "нет"]
+            ];
+      content.appendChild(
+        this.buildTable("Параметры", [
+          ...appearanceRows,
+          ["Прическа", this.character.appearance.hairStyle || "не задана"],
+          ["Цвет волос", this.character.appearance.hairColor || "не задан"]
+        ])
+      );
+      content.appendChild(
+        this.buildTable(
+          "Экипировка",
+          Object.entries(this.character.equipment).map(([slot, item]) => [slot, item ? item.name : "нет"])
+        )
+      );
+    }
+
+    if (this.activePlayerTab === "inventory") {
+      const inventoryRows = this.character.inventory.items.length
+        ? this.character.inventory.items.map((item) => [item.name, item.weight])
+        : [["Пусто", "0"]];
+      content.appendChild(this.buildTable("Инвентарь", inventoryRows));
+    }
+
+    if (this.activePlayerTab === "property") {
+      content.appendChild(
+        this.buildTable("Дом", [
+          ["Адрес", this.character.property.address],
+          ["Размер", this.character.property.size],
+          ["Мебель", this.character.property.furniture.length ? this.character.property.furniture.join(", ") : "Пусто"],
+          ["Техника", this.character.property.devices?.length ? this.character.property.devices.join(", ") : "Пусто"]
+        ])
+      );
+      if (this.character.photos.length) {
+        const photoRows = this.character.photos.slice(-3).map((photo) => [
+          photo.time,
+          `${photo.description} (${photo.rating})`
+        ]);
+        content.appendChild(this.buildTable("Фото", photoRows));
+      }
+    }
+
     this.playerContentElement.appendChild(content);
   }
 
@@ -2748,6 +2855,16 @@ class Game {
     this.sendAction.disabled = !state;
   }
 
+  updateSettingsButtons() {
+    if (this.settingsNextButton) this.settingsNextButton.disabled = this.state !== "playing";
+    if (this.settingsSaveButton) this.settingsSaveButton.disabled = this.state !== "playing";
+  }
+
+  toggleSettings(open) {
+    if (!this.settingsModal) return;
+    this.settingsModal.hidden = !open;
+  }
+
   save() {
     if (!this.character) return;
     this.character.layerSelections = this.serializeLayerSelections();
@@ -2765,6 +2882,8 @@ class Game {
       this.renderer.renderEntry({ system: "Сохранение не найдено." });
       this.showStartScreen(true);
       this.setInGameLayout(false);
+      this.state = "idle";
+      this.updateSettingsButtons();
       return;
     }
     const payload = JSON.parse(raw);
@@ -2781,8 +2900,7 @@ class Game {
     this.state = "playing";
     this.activePlayerTab = "mirror";
     this.enableInput(true);
-    this.nextTurn.disabled = false;
-    this.saveGame.disabled = false;
+    this.updateSettingsButtons();
     this.setInGameLayout(true);
     this.showStartScreen(false);
     this.hideCreationPanels();
