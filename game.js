@@ -105,6 +105,7 @@ class Character {
     };
     this.photos = profile.photos || [];
     this.contacts = profile.contacts || [];
+    this.layerSelections = profile.layerSelections || {};
     this.updateDerivedStats();
   }
 
@@ -569,6 +570,8 @@ class Game {
       photos: [],
       contacts: []
     };
+    this.initializeCharacterLayers();
+    this.profileDraft.layerSelections = this.serializeLayerSelections();
     this.creationQueue = [
       { key: "name", prompt: "Имя героя?" },
       { key: "gender", prompt: `Пол (варианты: ${CREATION_OPTIONS.genders.join(", ")})?` },
@@ -589,6 +592,10 @@ class Game {
     if (!question) return;
     this.reset();
     const prompt = this.getQuestionPrompt(question);
+    if (question.key === "editor") {
+      this.activePlayerTab = "editor";
+      this.renderPlayerPanel();
+    }
     this.renderer.renderEntry({
       dialogue: `Создание персонажа: ${prompt}`,
       system: "Введите ответ в поле ниже."
@@ -686,6 +693,15 @@ class Game {
           return;
         }
         break;
+      case "editor":
+        if (!value.toLowerCase().startsWith("готов")) {
+          this.renderer.renderEntry({
+            system: "Настройте внешний вид в редакторе слева и напишите «готово»."
+          });
+          return;
+        }
+        this.profileDraft.layerSelections = this.serializeLayerSelections();
+        break;
       case "stats":
         if (!this.applyStats(value)) {
           this.renderer.renderEntry({
@@ -734,7 +750,10 @@ class Game {
     if (hasAppearance) return;
     const insertIndex = this.creationQueue.findIndex((question) => question.key === "confirm");
     const appearanceQuestion = { key: "appearance", prompt: "" };
-    const questions = [appearanceQuestion, { key: "hair", prompt: "Прическа и цвет? (например: стиль короткая, цвет темный)" }];
+    const questions = [
+      appearanceQuestion,
+      { key: "editor", prompt: "Настройте внешний вид в редакторе слева и напишите «готово»." }
+    ];
     if (this.profileDraft.gender === "женский") {
       questions.push({ key: "menstruation", prompt: "Месячные сейчас? (да/нет)" });
     }
@@ -754,6 +773,9 @@ class Game {
     }
     if (question.key === "menstruation") {
       return "Месячные сейчас? (да/нет)";
+    }
+    if (question.key === "editor") {
+      return "Настройте внешний вид в редакторе слева и напишите «готово».";
     }
     return question.prompt;
   }
@@ -849,7 +871,11 @@ class Game {
   }
 
   finishCreation() {
+    if (!this.profileDraft.layerSelections) {
+      this.profileDraft.layerSelections = this.serializeLayerSelections();
+    }
     this.character = new Character(this.profileDraft);
+    this.layerSelections = this.applyLayerSelections(this.character.layerSelections);
     const starterItems = this.data.items.filter((item) => ["cash", "phone"].includes(item.id));
     starterItems.forEach((item) => this.character.inventory.add(item));
     this.equipStarterOutfit();
@@ -866,6 +892,7 @@ class Game {
 
     this.state = "playing";
     this.pendingMenu = null;
+    this.activePlayerTab = "status";
     this.enableInput(true);
     this.nextTurn.disabled = false;
     this.saveGame.disabled = false;
@@ -2248,6 +2275,10 @@ class Game {
     }
 
     if (this.activePlayerTab === "status") {
+      const preview = this.buildLayerPreview();
+      if (preview) {
+        content.appendChild(preview);
+      }
       content.appendChild(
         this.buildTable("Основное", [
           ["HP", this.character.health.hp],
@@ -2341,14 +2372,61 @@ class Game {
   initializeCharacterLayers() {
     if (!this.data.characterLayers?.categories?.length) return;
     this.characterLayers = this.data.characterLayers;
-    this.layerSelections = {};
-    this.characterLayers.categories.forEach((category) => {
+    if (this.character?.layerSelections) {
+      this.applyLayerSelections(this.character.layerSelections);
+      return;
+    }
+    this.layerSelections = this.buildDefaultLayerSelections();
+  }
+
+  buildDefaultLayerSelections() {
+    const selections = {};
+    this.characterLayers?.categories?.forEach((category) => {
       const defaults = category.layers.filter((layer) => layer.default).map((layer) => layer.id);
       if (!defaults.length && category.required && category.layers.length) {
         defaults.push(category.layers[0].id);
       }
-      this.layerSelections[category.id] = new Set(defaults);
+      selections[category.id] = new Set(defaults);
     });
+    return selections;
+  }
+
+  applyLayerSelections(data) {
+    if (!this.characterLayers?.categories?.length) {
+      this.layerSelections = {};
+      return this.layerSelections;
+    }
+    if (!data || Object.keys(data).length === 0) {
+      this.layerSelections = this.buildDefaultLayerSelections();
+      return this.layerSelections;
+    }
+    const defaults = this.buildDefaultLayerSelections();
+    const selections = {};
+    this.characterLayers.categories.forEach((category) => {
+      const stored = Array.isArray(data[category.id]) ? data[category.id] : [];
+      const fallback = defaults[category.id] ? Array.from(defaults[category.id]) : [];
+      selections[category.id] = new Set(stored.length ? stored : fallback);
+    });
+    this.layerSelections = selections;
+    return this.layerSelections;
+  }
+
+  serializeLayerSelections() {
+    const serialized = {};
+    Object.entries(this.layerSelections || {}).forEach(([categoryId, selection]) => {
+      serialized[categoryId] = Array.from(selection);
+    });
+    return serialized;
+  }
+
+  updateLayerSelectionsTarget() {
+    const serialized = this.serializeLayerSelections();
+    if (this.state === "creating") {
+      this.profileDraft.layerSelections = serialized;
+    }
+    if (this.character) {
+      this.character.layerSelections = serialized;
+    }
   }
 
   getActiveLayers() {
@@ -2374,6 +2452,7 @@ class Game {
     } else {
       this.layerSelections[categoryId].delete(layerId);
     }
+    this.updateLayerSelectionsTarget();
   }
 
   renderEditorPanel() {
@@ -2391,32 +2470,7 @@ class Game {
     const preview = document.createElement("div");
     preview.className = "character-preview";
 
-    const stack = document.createElement("div");
-    stack.className = "preview-stack";
-    const activeLayers = this.getActiveLayers();
-    if (!activeLayers.length) {
-      const empty = document.createElement("span");
-      empty.textContent = "Слои не выбраны.";
-      stack.appendChild(empty);
-    } else {
-      activeLayers.forEach((layer) => {
-        if (layer.asset) {
-          const img = document.createElement("img");
-          img.src = layer.asset;
-          img.alt = layer.label;
-          img.loading = "lazy";
-          img.addEventListener("error", () => {
-            img.remove();
-          });
-          stack.appendChild(img);
-        } else {
-          const placeholder = document.createElement("div");
-          placeholder.className = "layer-placeholder";
-          placeholder.textContent = layer.label;
-          stack.appendChild(placeholder);
-        }
-      });
-    }
+    const stack = this.buildLayerStack();
     preview.appendChild(stack);
 
     const options = document.createElement("div");
@@ -2460,6 +2514,45 @@ class Game {
     wrapper.appendChild(preview);
     wrapper.appendChild(options);
     return wrapper;
+  }
+
+  buildLayerPreview() {
+    if (!this.characterLayers?.categories?.length) return null;
+    const preview = document.createElement("div");
+    preview.className = "character-preview";
+    const stack = this.buildLayerStack();
+    preview.appendChild(stack);
+    return preview;
+  }
+
+  buildLayerStack() {
+    const stack = document.createElement("div");
+    stack.className = "preview-stack";
+    const activeLayers = this.getActiveLayers();
+    if (!activeLayers.length) {
+      const empty = document.createElement("span");
+      empty.textContent = "Слои не выбраны.";
+      stack.appendChild(empty);
+      return stack;
+    }
+    activeLayers.forEach((layer) => {
+      if (layer.asset) {
+        const img = document.createElement("img");
+        img.src = layer.asset;
+        img.alt = layer.label;
+        img.loading = "lazy";
+        img.addEventListener("error", () => {
+          img.remove();
+        });
+        stack.appendChild(img);
+      } else {
+        const placeholder = document.createElement("div");
+        placeholder.className = "layer-placeholder";
+        placeholder.textContent = layer.label;
+        stack.appendChild(placeholder);
+      }
+    });
+    return stack;
   }
 
   buildTable(title, rows) {
@@ -2601,6 +2694,7 @@ class Game {
 
   save() {
     if (!this.character) return;
+    this.character.layerSelections = this.serializeLayerSelections();
     const payload = {
       character: this.character,
       world: this.world
@@ -2617,6 +2711,7 @@ class Game {
     }
     const payload = JSON.parse(raw);
     this.character = new Character(payload.character);
+    this.applyLayerSelections(this.character.layerSelections);
     this.world = new World({
       districts: payload.world.districts,
       startDistrict: payload.world.activeDistrict,
@@ -2626,6 +2721,7 @@ class Game {
     this.eventManager = new EventManager(this.data.events);
 
     this.state = "playing";
+    this.activePlayerTab = "status";
     this.enableInput(true);
     this.nextTurn.disabled = false;
     this.saveGame.disabled = false;
