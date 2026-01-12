@@ -599,6 +599,7 @@ class Game {
     this.state = "creating";
     this.setInGameLayout(false);
     this.updateSettingsButtons();
+    document.body.classList.add("creating");
     this.profileDraft = {
       stats: { strength: 5, agility: 5, flexibility: 5, charisma: 5, intellect: 5 },
       skills: { dance: 1, persuasion: 1, streetwise: 1, combat: 1 },
@@ -634,7 +635,7 @@ class Game {
       { key: "confirm", prompt: "Подтвердить создание? (да/нет)" }
     ];
     this.currentQuestion = 0;
-    this.enableInput(true);
+    this.enableInput(false);
     this.showStartScreen(false);
     this.askNextQuestion();
   }
@@ -939,6 +940,7 @@ class Game {
     this.setInGameLayout(true);
     this.showStartScreen(false);
     this.hideCreationPanels();
+    document.body.classList.remove("creating");
 
     this.reset();
     this.renderer.renderEntry({
@@ -988,6 +990,7 @@ class Game {
 
     this.renderStatus();
     this.renderMap();
+    this.renderTravelButtons();
     this.renderAvailableActions();
     this.moveNpcs();
     this.renderNpcList();
@@ -2903,6 +2906,7 @@ class Game {
       this.setInGameLayout(false);
       this.state = "idle";
       this.updateSettingsButtons();
+      document.body.classList.add("creating");
       return;
     }
     const payload = JSON.parse(raw);
@@ -2923,6 +2927,7 @@ class Game {
     this.setInGameLayout(true);
     this.showStartScreen(false);
     this.hideCreationPanels();
+    document.body.classList.remove("creating");
 
     this.renderer.renderEntry({
       narrative: "Сохранение загружено. Город вновь оживает.",

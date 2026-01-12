@@ -142,6 +142,15 @@ body.in-game .output {
   overflow: hidden;
 }
 
+body.creating .tab-buttons button[data-tab="mirror"] {
+  display: none;
+}
+
+body.creating #action-input {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
 .player-panel .player-sections {
   overflow-y: auto;
   padding-right: 4px;
@@ -543,6 +552,7 @@ body.in-game .output {
 }
 
 .settings-button {
+  margin-top: auto;
   align-self: flex-start;
 }
 
@@ -624,4 +634,9 @@ body.in-game .output {
   justify-content: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+.player-panel,
+.log-panel,
+.sidebar {
+  min-height: 0;
 }
