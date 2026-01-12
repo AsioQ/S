@@ -2291,7 +2291,7 @@ class Game {
   renderNpcList() {
     let nearby = this.getNearbyNpcs();
     if (!nearby.length) {
-      this.moveNpcs();
+      this.ensureNearbyNpcs();
       nearby = this.getNearbyNpcs();
     }
     const info = nearby.length
@@ -2781,6 +2781,16 @@ class Game {
     });
   }
 
+  ensureNearbyNpcs() {
+    if (!this.world) return;
+    const active = this.npcs.filter((npc) => this.activeNpcIds.includes(npc.id));
+    if (!active.length) return;
+    active.sort(() => 0.5 - Math.random()).slice(0, 2).forEach((npc) => {
+      npc.district = this.world.activeDistrict;
+      npc.place = this.world.activePlace;
+    });
+  }
+
   getNearbyNpcs() {
     return this.npcs.filter(
       (npc) =>
@@ -2791,7 +2801,11 @@ class Game {
   }
 
   handleNpcList() {
-    const nearby = this.getNearbyNpcs();
+    let nearby = this.getNearbyNpcs();
+    if (!nearby.length) {
+      this.ensureNearbyNpcs();
+      nearby = this.getNearbyNpcs();
+    }
     if (!nearby.length) {
       return {
         narrative: "Поблизости нет знакомых.",
