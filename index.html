@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seaside Kairo: Text RPG</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <section class="output" aria-live="polite">
+      <div class="layout">
+        <div class="player-column">
+          <aside class="player-panel">
+            <h2>Персонаж</h2>
+            <div class="tab-buttons" id="player-tabs">
+              <button data-tab="mirror" class="active">Зеркало</button>
+              <button data-tab="status">Состояние</button>
+              <button data-tab="appearance">Внешность</button>
+              <button data-tab="inventory">Инвентарь</button>
+              <button data-tab="property">Имущество</button>
+            </div>
+            <div id="player-content"></div>
+          </aside>
+          <button id="open-settings" class="settings-button">Настройки</button>
+        </div>
+
+        <div class="log-panel">
+          <div class="center-panel">
+            <div id="log"></div>
+            <div id="creation-controls" class="creation-controls" hidden></div>
+            <div id="creation-editor" class="creation-editor" hidden></div>
+            <section class="input" id="action-input">
+              <label for="player-input">Ваше действие</label>
+              <div class="input-row">
+                <input id="player-input" type="text" placeholder="Например: пойти на набережную" disabled />
+                <button id="send-action" disabled>Отправить</button>
+              </div>
+              <p class="hint">Подсказка: вы можете игнорировать меню и писать свободный текст.</p>
+            </section>
+          </div>
+        </div>
+
+        <aside class="sidebar">
+          <div class="panel">
+            <h2>Карта</h2>
+            <div id="map"></div>
+          </div>
+          <div class="panel">
+            <h2>Доступные действия</h2>
+            <ul id="available-actions"></ul>
+          </div>
+          <div class="panel">
+            <h2>Быстрые кнопки</h2>
+            <div id="action-buttons" class="action-buttons"></div>
+          </div>
+          <div class="panel">
+            <h2>Быстрое перемещение</h2>
+            <div id="travel-buttons" class="action-buttons"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </div>
+
+  <div class="start-screen" id="start-screen">
+    <div class="start-card">
+      <div class="start-header">
+        <h1>Seaside Kairo v0.4</h1>
+        <p class="subtitle">Текстовый RPG-симулятор жизни — прибрежный город Японии</p>
+      </div>
+      <div class="start-body">
+        <section class="start-panel">
+          <h2>Обновление: v0.4</h2>
+          <ul>
+            <li>Редактор персонажа в центре создания.</li>
+            <li>Сохранение внешности и быстрые перемещения.</li>
+            <li>Новые панели и таблицы статуса.</li>
+          </ul>
+        </section>
+        <section class="start-panel">
+          <h2>О игре</h2>
+          <p>
+            Seaside Kairo — текстовый симулятор жизни в прибрежном городе Японии.
+            Создайте персонажа, исследуйте районы, знакомьтесь с NPC и развивайте навыки.
+          </p>
+        </section>
+      </div>
+      <div class="start-actions">
+        <button id="start-new">Создать персонажа</button>
+        <button id="start-load">Загрузить игру</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-modal" id="settings-modal" hidden>
+    <div class="settings-card">
+      <h2>Настройки</h2>
+      <button id="settings-new">Создать персонажа</button>
+      <button id="settings-next" disabled>Следующий ход</button>
+      <button id="settings-save" disabled>Сохранить</button>
+      <button id="settings-load">Загрузить</button>
+      <button id="settings-close">Закрыть</button>
+    </div>
+  </div>
+
+  <script src="game.js" type="module"></script>
+</body>
+</html>
