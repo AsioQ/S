@@ -217,7 +217,7 @@ class NPC {
 class World {
   constructor(config) {
     this.districts = config.districts;
-    this.time = { day: 1, hour: 8 };
+    this.time = { day: 1, month: 3, year: 2025, hour: 12 };
     this.activeDistrict = config.startDistrict;
     this.activePlace = config.startPlace;
   }
@@ -227,6 +227,16 @@ class World {
     while (this.time.hour >= 24) {
       this.time.hour -= 24;
       this.time.day += 1;
+      const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+      const maxDays = daysInMonth[this.time.month - 1] || 30;
+      if (this.time.day > maxDays) {
+        this.time.day = 1;
+        this.time.month += 1;
+        if (this.time.month > 12) {
+          this.time.month = 1;
+          this.time.year += 1;
+        }
+      }
     }
   }
 }
@@ -916,9 +926,10 @@ class Game {
       startDistrict: startConfig.district,
       startPlace: startConfig.place
     });
+    this.world.time = { day: 1, month: 3, year: 2025, hour: 12 };
     this.npcs = this.data.npcs.map((npc) => new NPC(npc));
     this.eventManager = new EventManager(this.data.events);
-    this.spawnNpcs(10);
+    this.spawnNpcs(Math.max(20, this.npcs.length));
 
     this.state = "playing";
     this.pendingMenu = null;
@@ -2275,7 +2286,11 @@ class Game {
   }
 
   renderNpcList() {
-    const nearby = this.getNearbyNpcs();
+    let nearby = this.getNearbyNpcs();
+    if (!nearby.length) {
+      this.moveNpcs();
+      nearby = this.getNearbyNpcs();
+    }
     const info = nearby.length
       ? `Рядом: ${nearby.map((npc) => npc.name).join(", ")}.`
       : "Поблизости никого нет.";
@@ -2322,24 +2337,28 @@ class Game {
     }
 
     if (this.activePlayerTab === "status") {
+      const timeLabel = `${String(this.world.time.hour).padStart(2, "0")}:00`;
+      const dateLabel = `${String(this.world.time.day).padStart(2, "0")}.${String(this.world.time.month).padStart(2, "0")}.${this.world.time.year}`;
       content.appendChild(
         this.buildTable("Основное", [
-          ["HP", this.character.health.hp],
-          ["Энергия", this.character.energy],
-          ["Голод", this.character.hunger],
-          ["Мораль", this.character.morale],
-          ["Досуг", this.character.leisure],
-          ["Деньги", this.character.money],
-          ["Локация", `${this.world.activeDistrict}, ${this.world.activePlace}`]
+          ["❤️ HP", this.character.health.hp],
+          ["⚡ Энергия", this.character.energy],
+          ["🍽️ Голод", this.character.hunger],
+          ["🧠 Мораль", this.character.morale],
+          ["🎧 Досуг", this.character.leisure],
+          ["💰 Деньги", this.character.money],
+          ["🕒 Время", timeLabel],
+          ["📅 Дата", dateLabel],
+          ["📍 Локация", `${this.world.activeDistrict}, ${this.world.activePlace}`]
         ])
       );
       content.appendChild(
         this.buildTable("Социальное", [
-          ["Работа", this.character.job],
-          ["Привлекательность", this.character.attractiveness],
-          ["Популярность", this.character.popularity],
+          ["🧾 Работа", this.character.job],
+          ["✨ Привлекательность", this.character.attractiveness],
+          ["⭐ Популярность", this.character.popularity],
           ...(this.character.gender === "женский" ? [["Сексуальность", this.character.sexuality]] : []),
-          ["Статус", this.character.isNaked() ? (this.character.gender === "женский" ? "голая" : "голый") : "одет(а)"]
+          ["👕 Статус", this.character.isNaked() ? (this.character.gender === "женский" ? "голая" : "голый") : "одет(а)"]
         ])
       );
     }

@@ -10,18 +10,20 @@
   <div class="app">
     <section class="output" aria-live="polite">
       <div class="layout">
-        <aside class="player-panel">
-          <h2>Персонаж</h2>
-          <div class="tab-buttons" id="player-tabs">
-            <button data-tab="mirror" class="active">Зеркало</button>
-            <button data-tab="status">Состояние</button>
-            <button data-tab="appearance">Внешность</button>
-            <button data-tab="inventory">Инвентарь</button>
-            <button data-tab="property">Имущество</button>
-          </div>
-          <div id="player-content"></div>
+        <div class="player-column">
+          <aside class="player-panel">
+            <h2>Персонаж</h2>
+            <div class="tab-buttons" id="player-tabs">
+              <button data-tab="mirror" class="active">Зеркало</button>
+              <button data-tab="status">Состояние</button>
+              <button data-tab="appearance">Внешность</button>
+              <button data-tab="inventory">Инвентарь</button>
+              <button data-tab="property">Имущество</button>
+            </div>
+            <div id="player-content"></div>
+          </aside>
           <button id="open-settings" class="settings-button">Настройки</button>
-        </aside>
+        </div>
 
         <div class="log-panel">
           <div class="center-panel">
@@ -63,11 +65,31 @@
 
   <div class="start-screen" id="start-screen">
     <div class="start-card">
-      <h1>Seaside Kairo v0.4</h1>
-      <p class="subtitle">Текстовый RPG-симулятор жизни — прибрежный город Японии</p>
-      <h2>Начать игру</h2>
-      <button id="start-new">Создать персонажа</button>
-      <button id="start-load">Загрузить игру</button>
+      <div class="start-header">
+        <h1>Seaside Kairo v0.4</h1>
+        <p class="subtitle">Текстовый RPG-симулятор жизни — прибрежный город Японии</p>
+      </div>
+      <div class="start-body">
+        <section class="start-panel">
+          <h2>Обновление: v0.4</h2>
+          <ul>
+            <li>Редактор персонажа в центре создания.</li>
+            <li>Сохранение внешности и быстрые перемещения.</li>
+            <li>Новые панели и таблицы статуса.</li>
+          </ul>
+        </section>
+        <section class="start-panel">
+          <h2>О игре</h2>
+          <p>
+            Seaside Kairo — текстовый симулятор жизни в прибрежном городе Японии.
+            Создайте персонажа, исследуйте районы, знакомьтесь с NPC и развивайте навыки.
+          </p>
+        </section>
+      </div>
+      <div class="start-actions">
+        <button id="start-new">Создать персонажа</button>
+        <button id="start-load">Загрузить игру</button>
+      </div>
     </div>
   </div>
 
